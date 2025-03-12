@@ -12,7 +12,7 @@ menu_router = Router()
 
 @menu_router.message(Command("menu"))
 async def show_menu(message: Message):
-    await message.answer("Виберіть пункт меню:", reply_markup=simple_menu_keyboard())
+    await message.answer("Select a menu item:", reply_markup=simple_menu_keyboard())
 
 
 # We can use F.data filter to filter callback queries by data field from CallbackQuery object
@@ -21,35 +21,35 @@ async def create_order(query: CallbackQuery):
     # Firstly, always answer callback query (as Telegram API requires)
     await query.answer()
 
-    # This method will send an answer to the message with the button, that user pressed
+    # This method will send an answer to the message with the button that the user pressed
     # Here query - is a CallbackQuery object, which contains message: Message object
-    await query.message.answer("Ви обрали створення замовлення!")
+    await query.message.answer("You have selected order creation!")
 
     # You can also Edit the message with a new text
-    # await query.message.edit_text("Ви обрали створення замовлення!")
+    # await query.message.edit_text("You have selected order creation!")
 
 
 # Let's create a simple list of orders for demonstration purposes
 ORDERS = [
-    {"id": 1, "title": "Замовлення 1", "status": "Виконується"},
-    {"id": 2, "title": "Замовлення 2", "status": "Виконано"},
-    {"id": 3, "title": "Замовлення 3", "status": "Виконано"},
+    {"id": 1, "title": "Order 1", "status": "In Progress"},
+    {"id": 2, "title": "Order 2", "status": "Completed"},
+    {"id": 3, "title": "Order 3", "status": "Completed"},
 ]
 
 
 @menu_router.callback_query(F.data == "my_orders")
 async def my_orders(query: CallbackQuery):
     await query.answer()
-    await query.message.edit_text("Ви обрали перегляд ваших замовлень!",
+    await query.message.edit_text("You have selected to view your orders!",
                                   reply_markup=my_orders_keyboard(ORDERS))
 
 
-# To filter the callback data, that was created with CallbackData factory, you can use .filter() method
+# To filter the callback data that was created with CallbackData factory, you can use the .filter() method
 @menu_router.callback_query(OrderCallbackData.filter())
 async def show_order(query: CallbackQuery, callback_data: OrderCallbackData):
     await query.answer()
 
-    # You can get the data from callback_data object as attributes
+    # You can get the data from the callback_data object as attributes
     order_id = callback_data.order_id
 
     # Then you can get the order from your database (here we use a simple list)
@@ -59,20 +59,20 @@ async def show_order(query: CallbackQuery, callback_data: OrderCallbackData):
         # Here we use aiogram.utils.formatting to format the text
         # https://docs.aiogram.dev/en/latest/utils/formatting.html
         text = as_section(
-            as_key_value("Замовлення #", order_info["id"]),
+            as_key_value("Order #", order_info["id"]),
             as_marked_list(
-                as_key_value("Товар", order_info["title"]),
-                as_key_value("Статус", order_info["status"]),
+                as_key_value("Product", order_info["title"]),
+                as_key_value("Status", order_info["status"]),
             ),
         )
         # Example:
-        # Замовлення #: 2
-        # - Товар: Замовлення 2
-        # - Статус: Виконано
+        # Order #: 2
+        # - Product: Order 2
+        # - Status: Completed
 
         await query.message.edit_text(text.as_html(), parse_mode=ParseMode.HTML)
 
         # You can also use MarkdownV2:
         # await query.message.edit_text(text.as_markdown(), parse_mode=ParseMode.MARKDOWN_V2)
     else:
-        await query.message.edit_text("Замовлення не знайдено!")
+        await query.message.edit_text("Order not found!")

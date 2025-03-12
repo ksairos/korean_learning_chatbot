@@ -3,13 +3,13 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
-# This is a simple keyboard, that contains 2 buttons
+# This is a simple keyboard that contains 2 buttons
 def very_simple_keyboard():
     buttons = [
         [
-            InlineKeyboardButton(text="📝 Створити замовлення",
+            InlineKeyboardButton(text="📝 Create Order",
                                  callback_data="create_order"),
-            InlineKeyboardButton(text="📋 Мої замовлення", callback_data="my_orders"),
+            InlineKeyboardButton(text="📋 My Orders", callback_data="my_orders"),
         ],
     ]
 
@@ -19,23 +19,23 @@ def very_simple_keyboard():
     return keyboard
 
 
-# This is the same keyboard, but created with InlineKeyboardBuilder (preferred way)
+# This is the same keyboard but created with InlineKeyboardBuilder (preferred way)
 def simple_menu_keyboard():
     # First, you should create an InlineKeyboardBuilder object
     keyboard = InlineKeyboardBuilder()
 
-    # You can use keyboard.button() method to add buttons, then enter text and callback_data
+    # You can use the keyboard.button() method to add buttons, then enter text and callback_data
     keyboard.button(
-        text="📝 Створити замовлення",
+        text="📝 Create Order",
         callback_data="create_order"
     )
     keyboard.button(
-        text="📋 Мої замовлення",
+        text="📋 My Orders",
         # In this simple example, we use a string as callback_data
         callback_data="my_orders"
     )
 
-    # If needed you can use keyboard.adjust() method to change the number of buttons per row
+    # If needed, you can use keyboard.adjust() method to change the number of buttons per row
     # keyboard.adjust(2)
 
     # Then you should always call keyboard.as_markup() method to get a valid InlineKeyboardMarkup object
@@ -47,11 +47,11 @@ class OrderCallbackData(CallbackData, prefix="order"):
     """
     This class represents a CallbackData object for orders.
 
-    - When used in InlineKeyboardMarkup, you have to create an instance of this class, run .pack() method, and pass to callback_data parameter.
+    - When used in InlineKeyboardMarkup, you have to create an instance of this class, run the .pack() method, and pass it to the callback_data parameter.
 
-    - When used in InlineKeyboardBuilder, you have to create an instance of this class and pass to callback_data parameter (without .pack() method).
+    - When used in InlineKeyboardBuilder, you have to create an instance of this class and pass it to the callback_data parameter (without the .pack() method).
 
-    - In handlers you have to import this class and use it as a filter for callback query handlers, and then unpack callback_data parameter to get the data.
+    - In handlers, you have to import this class and use it as a filter for callback query handlers, and then unpack the callback_data parameter to get the data.
 
     # Example usage in simple_menu.py
     """
@@ -66,7 +66,7 @@ def my_orders_keyboard(orders: list):
         keyboard.button(
             text=f"📝 {order['title']}",
             # Here we use an instance of OrderCallbackData class as callback_data parameter
-            # order id is the field in OrderCallbackData class, that we defined above
+            # order_id is the field in OrderCallbackData class that we defined above
             callback_data=OrderCallbackData(order_id=order["id"])
         )
 
