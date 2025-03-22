@@ -10,8 +10,6 @@ from .base import Base, TimestampMixin, TableNameMixin
 class User(Base, TimestampMixin, TableNameMixin):
     """
     This class represents a User in the application.
-    If you want to learn more about SQLAlchemy and Alembic, you can check out the following link to my course:
-    https://www.udemy.com/course/sqlalchemy-alembic-bootcamp/?referralCode=E9099C5B5109EB747126
 
     Attributes:
         user_id (Mapped[int]): The unique identifier of the user.

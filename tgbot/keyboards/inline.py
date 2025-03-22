@@ -71,3 +71,22 @@ def my_orders_keyboard(orders: list):
         )
 
     return keyboard.as_markup()
+
+
+def get_main_menu_keyboard():
+    """
+    Creates the main menu keyboard with the primary bot functions.
+    """
+    keyboard = InlineKeyboardBuilder()
+    
+    # Add main menu buttons
+    keyboard.button(text="🇰🇷 Learn Vocabulary", callback_data="learn_vocabulary")
+    keyboard.button(text="📝 Practice Writing", callback_data="practice_writing")
+    keyboard.button(text="🎯 Daily Challenge", callback_data="daily_challenge")
+    keyboard.button(text="📊 My Progress", callback_data="my_progress")
+    keyboard.button(text="ℹ️ Help", callback_data="help")
+    
+    # Arrange buttons in a 2x2 grid (2 buttons per row)
+    keyboard.adjust(2)
+    
+    return keyboard.as_markup()

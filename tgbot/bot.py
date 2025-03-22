@@ -14,6 +14,23 @@ from tgbot.services import broadcaster
 
 
 async def on_startup(bot: Bot, admin_ids: list[int]):
+    # Set up the main menu button that appears next to the message input field
+    from aiogram.types import BotCommand, BotCommandScopeDefault
+    
+    # Сюда добавляются команды для кнопки Menu (слева от поля ввода)
+    commands = [
+        BotCommand(command="start", description="Start the bot"),
+        BotCommand(command="help", description="Show help information"),
+        BotCommand(command="menu", description="Open main menu"),
+        BotCommand(command="bot_command", description="BotCommand"),
+    ]
+
+    # Устанавливаем команды в определенных чатах (все чаты)
+    # Если выбрать scope=BotCommandScopeChat, то команды будут доступны только в определенных чатах
+    # Если выбрать scope=BotCommandScopeAllPrivateChats, то команды будут доступны во всех чатах с ботом
+    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    
+    # Notify admins that the bot has started
     await broadcaster.broadcast(bot, admin_ids, "The bot is launched")
 
 
@@ -87,7 +104,7 @@ def get_storage(config):
 async def main():
     setup_logging()
 
-    config = load_config(".env")
+    config = load_config("../.env")
     storage = get_storage(config)
 
     bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode="HTML"))

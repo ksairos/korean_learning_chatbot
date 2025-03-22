@@ -54,24 +54,24 @@ services:
   #  volumes:
   #    - cache:/data
 
-  # api:
-  #  image: "api"
-  #  stop_signal: SIGINT
-  #  build:
-  #    context: ./infrastructure/api
-  #    dockerfile: Dockerfile
-  #  working_dir: "/usr/src/app/api"
-  #  volumes:
-  #    - .:/usr/src/app/api
-  #  command: [ "uvicorn", "infrastructure.api.app:app", "--host", "0.0.0.0", "--port", "8000" ]
-  #  restart: always
-  #  env_file:
-  #    - ".env"
-  #  logging:
-  #    driver: "json-file"
-  #    options:
-  #      max-size: "200k"
-  #      max-file: "10"
+  api:
+    image: "api"
+    stop_signal: SIGINT
+    build:
+      context: api
+      dockerfile: Dockerfile
+    working_dir: "/usr/src/app/api"
+    volumes:
+      - .:/usr/src/app/api
+    command: [ "uvicorn", "infrastructure.api.app:app", "--host", "0.0.0.0", "--port", "8000" ]
+    restart: always
+    env_file:
+      - ".env"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
 
   # reverse-proxy:
   #  container_name: nginx-reverse-proxy
