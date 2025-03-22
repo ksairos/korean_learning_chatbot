@@ -20,6 +20,7 @@ from tgbot.filters.admin import AdminFilter
 
 router = Router()
 
+
 @router.message(AdminFilter())
 async def admin_command_handler(message: Message):
     # This handler only processes messages from admins

@@ -1,9 +1,13 @@
 FROM python:3.12-bookworm
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY ../requirements.txt ./
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
+ENV UV_COMPILE_BYTECODE=1
 
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml .
+COPY uv.lock .
+RUN pip install --no-cache-dir uv
+RUN uv sync --frozen --only-group tgbot
 
 COPY . .

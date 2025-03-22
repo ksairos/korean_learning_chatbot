@@ -3,7 +3,7 @@ import logging
 import betterlogging as bl
 import fastapi
 from aiogram import Bot
-from fastapi import FastAPI, Body
+from fastapi import FastAPI
 from starlette.responses import JSONResponse
 from pydantic import BaseModel
 

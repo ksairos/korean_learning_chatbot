@@ -20,12 +20,13 @@ from aiogram import Dispatcher
 from tgbot.config import Config
 from tgbot.middlewares.config import ConfigMiddleware
 
+
 def register_middlewares(dp: Dispatcher, config: Config):
     middleware = ConfigMiddleware(config)
-    
+
     # Apply middleware to all message handlers
     dp.message.outer_middleware(middleware)
-    
+
     # Apply middleware to all callback query handlers
     dp.callback_query.outer_middleware(middleware)
 ```

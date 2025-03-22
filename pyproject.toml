@@ -19,3 +19,11 @@ dependencies = [
     "uvicorn>=0.34.0",
     "yarl>=1.18.3",
 ]
+
+[dependency-groups]
+tgbot = [
+    "aiogram>=3.18.0",
+    "betterlogging>=1.0.0",
+    "environs>=9.5.0",
+    "redis>=5.2.1",
+]

@@ -25,10 +25,10 @@ from tgbot.keyboards.inline import make_callback_data, make_inline_keyboard
 # Using a CallbackData factory for type-safe callbacks
 callback_data = make_callback_data("action", "item_id")
 keyboard = make_inline_keyboard(
-    [
-        [{"text": "Option 1", "callback_data": callback_data.new(action="select", item_id="1")}],
-        [{"text": "Option 2", "callback_data": callback_data.new(action="select", item_id="2")}]
-    ]
+  [
+    [{"text": "Option 1", "callback_data": callback_data.new(action="select", item_id="1")}],
+    [{"text": "Option 2", "callback_data": callback_data.new(action="select", item_id="2")}]
+  ]
 )
 
 await message.answer("Choose an option:", reply_markup=keyboard)
@@ -40,8 +40,8 @@ await message.answer("Choose an option:", reply_markup=keyboard)
 from tgbot.keyboards.reply import make_reply_keyboard
 
 keyboard = make_reply_keyboard(
-    [["Option 1", "Option 2"], 
-     ["Option 3", "Option 4"]]
+  [["Option 1", "Option 2"],
+   ["Option 3", "Option 4"]]
 )
 
 await message.answer("Choose an option:", reply_markup=keyboard)
