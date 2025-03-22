@@ -10,4 +10,4 @@ COPY uv.lock .
 RUN pip install --no-cache-dir uv
 RUN uv sync --frozen --only-group tgbot
 
-COPY . .
+COPY tgbot tgbot/
