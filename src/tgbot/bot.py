@@ -7,7 +7,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from aiogram.client.default import DefaultBotProperties
 
-from src.config.settings import load_config, Config
+from src.config.settings import Config
 from src.tgbot.handlers import routers_list
 from src.tgbot.middlewares.config import ConfigMiddleware
 from src.tgbot.services import broadcaster
@@ -92,6 +92,7 @@ def get_storage(config):
         Storage: The storage object based on the configuration.
 
     """
+    # TODO Configure for Redis
     if config.tg_bot.use_redis:
         return RedisStorage.from_url(
             config.redis.dsn(),
@@ -104,10 +105,10 @@ def get_storage(config):
 async def main():
     setup_logging()
 
-    config = load_config("../../.env")
+    config = Config()
     storage = get_storage(config)
 
-    bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode="HTML"))
+    bot = Bot(token=config.tg_bot.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(*routers_list)

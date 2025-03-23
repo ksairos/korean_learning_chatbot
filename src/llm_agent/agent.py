@@ -10,14 +10,6 @@ from src.schemas.schemas import (
 
 from pydantic_ai import Agent
 from pydantic_ai.models import KnownModelName
-from pydantic_ai.messages import (
-    ModelMessage,
-    ModelMessagesTypeAdapter,
-    ModelRequest,
-    ModelResponse,
-    TextPart,
-    UserPromptPart,
-)
 
 load_dotenv()
 logfire.configure(send_to_logfire="if-token-present")
@@ -28,7 +20,6 @@ class LLMAgent:
             model_name, 
             instrument=True,
             system_prompt=prompts.prompts.answer_generation,
-            
             )
 
     async def query(self, user_prompt: str) -> str:
