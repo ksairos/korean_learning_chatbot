@@ -20,7 +20,7 @@ Telegram bots can display custom keyboards to users for easier interaction. This
 ### Inline Keyboards
 
 ```python
-from tgbot.keyboards.inline import make_callback_data, make_inline_keyboard
+from src.tgbot.keyboards.inline import make_callback_data, make_inline_keyboard
 
 # Using a CallbackData factory for type-safe callbacks
 callback_data = make_callback_data("action", "item_id")
@@ -37,7 +37,7 @@ await message.answer("Choose an option:", reply_markup=keyboard)
 ### Reply Keyboards
 
 ```python
-from tgbot.keyboards.reply import make_reply_keyboard
+from src.tgbot.keyboards.reply import make_reply_keyboard
 
 keyboard = make_reply_keyboard(
   [["Option 1", "Option 2"],

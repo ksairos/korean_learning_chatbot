@@ -19,12 +19,12 @@ Services provide functionality that doesn't fit into handlers or middlewares. Th
 
 ```python
 from aiogram import Bot
-from tgbot.services.broadcaster import broadcast
+from src.tgbot.services.broadcaster import broadcast
 
 
 async def notify_admins(bot: Bot, admin_ids: list[int], message: str):
-  # Safely send a message to all admins
-  await broadcast(bot, admin_ids, message)
+    # Safely send a message to all admins
+    await broadcast(bot, admin_ids, message)
 ```
 
 ### Adding New Services

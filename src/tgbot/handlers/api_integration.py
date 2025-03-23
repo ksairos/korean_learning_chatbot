@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 # This is where our FastAPI server is running
 # In Docker, use the service name instead of localhost
-API_URL = "http://api:8000/process_message"
+API_URL = "http://api:8000/query"
+
 
 @api_router.message(Command("ask"))
 async def handle_ask_command(message: Message):

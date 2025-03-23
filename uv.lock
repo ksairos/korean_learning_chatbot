@@ -717,6 +717,7 @@ dependencies = [
     { name = "environs" },
     { name = "fastapi" },
     { name = "pydantic-ai", extra = ["logfire"] },
+    { name = "pydantic-settings" },
     { name = "redis" },
     { name = "sqlalchemy" },
     { name = "ujson" },
@@ -742,6 +743,7 @@ requires-dist = [
     { name = "environs", specifier = "~=9.0" },
     { name = "fastapi", specifier = ">=0.115.11" },
     { name = "pydantic-ai", extras = ["logfire"], specifier = ">=0.0.41" },
+    { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "redis", specifier = ">=5.2.1" },
     { name = "sqlalchemy", specifier = "~=2.0" },
     { name = "ujson", specifier = ">=5.10.0" },
@@ -1300,6 +1302,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/98/6b/79f0e8746180a20279bf32231f1397044297e3eaab114db7d5e766d7eaaa/pydantic_graph-0.0.41.tar.gz", hash = "sha256:af287d6e23134502748d55a5462a812c574bd841d7556bf948a71daefee219e1", size = 20325 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/85/c4/8aff812174668f82707274fb9cd5d6aa6a90c51f3332ed9a2eb3d9e1a20f/pydantic_graph-0.0.41-py3-none-any.whl", hash = "sha256:ca31f43038a2d87baed76d5bf7928856c75aed26b13b742f2e4c655cfca12c2d", size = 25804 },
+]
+
+[[package]]
+name = "pydantic-settings"
+version = "2.8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/82/c79424d7d8c29b994fb01d277da57b0a9b09cc03c3ff875f9bd8a86b2145/pydantic_settings-2.8.1.tar.gz", hash = "sha256:d5c663dfbe9db9d5e1c646b2e161da12f0d734d422ee56f567d0ea2cee4e8585", size = 83550 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/53/a64f03044927dc47aafe029c42a5b7aabc38dfb813475e0e1bf71c4a59d0/pydantic_settings-2.8.1-py3-none-any.whl", hash = "sha256:81942d5ac3d905f7f3ee1a70df5dfb62d5569c12f51a5a647defc1c3d9ee2e9c", size = 30839 },
 ]
 
 [[package]]

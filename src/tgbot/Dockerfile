@@ -8,6 +8,8 @@ ENV UV_COMPILE_BYTECODE=1
 COPY pyproject.toml .
 COPY uv.lock .
 RUN pip install --no-cache-dir uv
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv sync --frozen --only-group tgbot
 
-COPY api api/
+COPY src/tgbot src/tgbot/
+COPY src/config src/config/
+COPY src/schemas src/schemas/

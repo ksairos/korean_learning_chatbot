@@ -16,7 +16,7 @@ Attach filters to handlers to enable conditional processing:
 
 ```python
 from aiogram import Router
-from tgbot.filters.admin import AdminFilter
+from src.tgbot.filters.admin import AdminFilter
 
 router = Router()
 

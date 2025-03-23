@@ -58,7 +58,7 @@ services:
     image: "api"
     stop_signal: SIGINT
     build:
-      context: api
+      context: src/api
       dockerfile: Dockerfile
     working_dir: "/usr/src/app/api"
     volumes:

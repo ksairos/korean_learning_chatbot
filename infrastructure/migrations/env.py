@@ -6,7 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from infrastructure.database.models import Base
-from tgbot.config import load_config
+from src.config import load_config
 
 from alembic import context
 

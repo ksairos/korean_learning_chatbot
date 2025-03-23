@@ -19,7 +19,7 @@ The `/tgbot` package serves as the main entry point for the bot's functionality 
 Configuration is loaded from environment variables:
 
 ```python
-from tgbot.config import load_config
+from src.config import load_config
 
 config = load_config(".env")
 ```

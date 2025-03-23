@@ -17,8 +17,8 @@ Register middlewares with the dispatcher to make them active:
 
 ```python
 from aiogram import Dispatcher
-from tgbot.config import Config
-from tgbot.middlewares.config import ConfigMiddleware
+from src.config import Config
+from src.tgbot.middlewares.config import ConfigMiddleware
 
 
 def register_middlewares(dp: Dispatcher, config: Config):
