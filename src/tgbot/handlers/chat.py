@@ -5,11 +5,11 @@ from aiogram.utils.markdown import hcode
 import aiohttp
 import logging
 
-echo_router = Router()
+chat_router = Router()
 
 API_URL = "http://api:8000/query"
 
-@echo_router.message(F.text, StateFilter(None))
+@chat_router.message(F.text, StateFilter(None))
 async def bot_echo(message: types.Message):
     
     if message.text.startswith('/'):
@@ -34,7 +34,7 @@ async def bot_echo(message: types.Message):
         logging.error(f"Error processing message via API: {e}")
 
 
-@echo_router.message(F.text)
+@chat_router.message(F.text)
 async def bot_echo_all(message: types.Message, state: FSMContext):
     state_name = await state.get_state()
     text = [

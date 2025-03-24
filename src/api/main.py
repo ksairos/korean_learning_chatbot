@@ -27,4 +27,4 @@ async def root():
 @app.post("/query")
 async def process_message(message: Message):
     response = await agent.query(message.user_prompt)
-    return {"llm_response":response}
+    return {"llm_response" : response}

@@ -1,23 +1,26 @@
 # Korean Learning Bot - Development Guide
 
 ## Commands
-- **Run bot**: `python bot.py` or `python main.py`
-- **Install dependencies**: `pip install -r requirements.txt`
-- **Docker setup**: `docker-compose up --build`
+- **Run bot**: `python -m tgbot.bot` or `python main.py`
+- **Install dependencies**: `pip install -r requirements.txt` or `uv pip install -r requirements.txt`
+- **Docker setup**: `docker compose up --build` (or `docker-compose` for older versions)
 - **Database migrations**: 
-  - Run migrations: `docker-compose exec api alembic upgrade head`
+  - Run migrations: `docker compose exec api alembic upgrade head`
   - Create migration: `./scripts/alembic/create_migrations.sh "migration_description"`
   - Run locally: `alembic upgrade head`
 
 ## Testing & Linting
 - **Run tests**: `pytest tests/`
 - **Run single test**: `pytest tests/path_to_test.py::test_function_name -v`
+- **Debug test**: `pytest tests/path_to_test.py -vvs`
 - **Lint code**: `flake8 .`
 - **Type check**: `mypy .`
 
 ## Code Style
 - **Imports**: Group as standard lib → third-party → local, alphabetically within groups
-- **Formatting**: Use docstrings for all functions and classes
+- **Formatting**: 
+  - Use docstrings for all functions and classes
+  - Line length: 88 characters max (Black compatible)
 - **Types**: Always use type hints for parameters and return values
 - **Naming**: 
   - snake_case for variables/functions
@@ -33,4 +36,4 @@
 - aiogram v3.0+ with SQLAlchemy 2.0 and Alembic for migrations
 - Configuration via .env file using environs package
 - Redis for FSM storage
-- RAG system integration for chatbot functionality
+- RAG system integration for Korean language chatbot functionality

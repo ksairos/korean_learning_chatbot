@@ -22,7 +22,7 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
         BotCommand(command="start", description="Start the bot"),
         BotCommand(command="help", description="Show help information"),
         BotCommand(command="menu", description="Open main menu"),
-        BotCommand(command="bot_command", description="BotCommand"),
+        BotCommand(command="vocab", description="Словарь"),
     ]
 
     # Устанавливаем команды в определенных чатах (все чаты)

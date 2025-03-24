@@ -52,6 +52,7 @@ class TgBot(BaseSettings):
     bot_token: str
     admin_ids: list[int]
     use_redis: bool
+    krdict_api_key: str
     
 
 class Miscellaneous(BaseSettings):

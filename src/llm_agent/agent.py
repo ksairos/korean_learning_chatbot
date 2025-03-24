@@ -24,7 +24,7 @@ class LLMAgent:
 
     async def query(self, user_prompt: str) -> str:
         response = await self.agent.run(user_prompt)
-        logfire.info("Reponse: {response}", response=response)
+        logfire.info("Response: {response}", response=response)
         return response.data
 
 
