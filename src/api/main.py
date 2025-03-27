@@ -1,4 +1,4 @@
-import logging
+import logfire
 
 import betterlogging as bl
 from aiogram import Bot
@@ -9,9 +9,7 @@ from src.config.settings import Config
 from src.llm_agent.agent import agent
 
 app = FastAPI()
-log_level = logging.INFO
-bl.basic_colorized_config(level=log_level)
-log = logging.getLogger(__name__)
+logfire.configure(send_to_logfire="if-token-present")
 
 config = Config()
 bot = Bot(token=config.tg_bot.bot_token)
@@ -26,5 +24,6 @@ async def root():
 
 @app.post("/query")
 async def process_message(message: Message):
-    response = await agent.query(message.user_prompt)
-    return {"llm_response" : response}
+    response = await agent.run(message.user_prompt)
+    logfire.info("Response: {response}", response=response.data)
+    return {"response" : response.data}

@@ -23,7 +23,7 @@ async def bot_echo(message: types.Message):
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    llm_response = data["llm_response"]
+                    llm_response = data["response"]
                     
                     await message.answer(llm_response)
                     
