@@ -13,3 +13,4 @@ RUN uv sync --frozen --only-group tgbot
 COPY src/tgbot src/tgbot/
 COPY src/config src/config/
 COPY src/schemas src/schemas/
+COPY data/ data/

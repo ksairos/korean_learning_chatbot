@@ -7,7 +7,7 @@ import logging
 
 chat_router = Router()
 
-API_URL = "http://api:8000/query"
+API_URL = "http://api:8000/invoke"
 
 @chat_router.message(F.text, StateFilter(None))
 async def bot_echo(message: types.Message):

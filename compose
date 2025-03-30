@@ -7,13 +7,14 @@ services:
       - .env
     depends_on:
       - api
-      - qdrant
     command: python -m src.tgbot.bot
     develop:
       watch:
        - path: src/
          action: sync+restart
          target: src/
+    volumes:
+      - /data:/app/data
 
   api:
     build:
@@ -21,21 +22,9 @@ services:
       dockerfile: src/api/Dockerfile
     env_file:
       - .env
-    depends_on:
-      - qdrant
     ports:
       - "8000:8000"
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
-    volumes:
-      - ./data:/app/data
-    
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant_storage:/qdrant/storage:z
 #  postgres:
 #    image: postgres:15
 #    restart: always
@@ -70,7 +59,6 @@ services:
 #    networks:
 #      - botnet
 #
-volumes:
-  qdrant_storage:
+#volumes:
 #  postgres_data:
 #  redis_data:

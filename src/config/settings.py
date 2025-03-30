@@ -68,11 +68,9 @@ class Config(BaseSettings):
     misc: Miscellaneous = Miscellaneous()
     
     # db: DbConfig = DbConfig()
-    
     # redis: Optional[RedisConfig] = RedisConfig()
     
 #TODO Implement redis if needed
-
 
 # @dataclass
 # class RedisConfig:

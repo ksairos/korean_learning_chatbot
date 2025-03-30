@@ -14,3 +14,4 @@ COPY src/api src/api/
 COPY src/config src/config/
 COPY src/schemas src/schemas/
 COPY src/llm_agent src/llm_agent/
+COPY data/ data/

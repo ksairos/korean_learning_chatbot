@@ -1,6 +1,5 @@
 import logfire
 
-import betterlogging as bl
 from aiogram import Bot
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -22,7 +21,7 @@ async def root():
     return {"message" : "API"}
 
 
-@app.post("/query")
+@app.post("/invoke")
 async def process_message(message: Message):
     response = await agent.run(message.user_prompt)
     logfire.info("Response: {response}", response=response.data)
