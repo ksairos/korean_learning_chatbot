@@ -13,10 +13,10 @@ def word_keyboard():
         text="След. страница ▶️", callback_data="next_word"
     )
     keyboard.button(
-        text="Показать примеры 📝", callback_data="show_examples"
+        text="Примеры 📝", callback_data="show_examples"
     )
     keyboard.button(
-        text="Выйти из словаря 🚪", callback_data="exit_vocab_mode"
+        text="Выйти 🚪", callback_data="exit_vocab_mode"
     )
 
     # If needed, you can use keyboard.adjust() method to change the number of buttons per row

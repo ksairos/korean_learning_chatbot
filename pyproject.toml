@@ -12,13 +12,17 @@ dependencies = [
     "betterlogging>=1.0.0",
     "environs~=9.0",
     "fastapi>=0.115.11",
+    "fastembed>=0.6.0",
+    "jupyter>=1.1.1",
     "krdict-py>=3.0.2",
+    "logfire[fastapi]>=3.9.0",
     "lxml>=5.3.1",
     "pydantic-ai[logfire]>=0.0.41",
     "pydantic-settings>=2.8.1",
     "qdrant-client>=1.13.3",
     "redis>=5.2.1",
     "requests>=2.32.3",
+    "sentence-transformers>=4.0.2",
     "sqlalchemy~=2.0",
     "ujson>=5.10.0",
     "uvicorn>=0.34.0",
@@ -26,6 +30,10 @@ dependencies = [
 ]
 
 [dependency-groups]
+api = [
+    "fastembed>=0.6.0",
+    "sentence-transformers>=4.0.2",
+]
 tgbot = [
     "aiogram>=3.18.0",
     "betterlogging>=1.0.0",

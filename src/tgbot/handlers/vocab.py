@@ -12,7 +12,7 @@ from src.tgbot.keyboards.vocab_keyboard import word_keyboard, examples_keyboard,
 from src.tgbot.misc.states import VocabState
 
 config = Config()
-krdict.set_key(config.tg_bot.krdict_api_key)
+krdict.set_key(config.krdict_api_key)
 
 dictionary_router = Router()
 

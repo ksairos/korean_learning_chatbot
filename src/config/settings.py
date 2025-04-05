@@ -1,75 +1,52 @@
-from dataclasses import dataclass
-from typing import Optional
-
-from environs import Env
-from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-    
-class QdrantConfig(BaseSettings):
-    """
-    Qdrant configuration class.
-    This class holds the settings for the Qdrant vector database
-    """
-    qdrant_collection_name: str
-    qdrant_host: str
-    qdrant_port: int
-    
-    
-class DbConfig(BaseSettings):
-    db_host: str
-    db_password: str
-    db_user: str
-    db_name: str
-    db_port: int = 5432
-    
-    def construct_sqlalchemy_url(self, driver="asyncpg", host=None, port=None) -> str:
-        """
-        Constructs and returns a SQLAlchemy URL for this database configuration.
-        """
-        # TODO: If you're using SQLAlchemy, move the import to the top of the file!
-        from sqlalchemy.engine.url import URL
-
-        if not host:
-            host = self.host
-        if not port:
-            port = self.port
-        uri = URL.create(
-            drivername=f"postgresql+{driver}",
-            username=self.user,
-            password=self.password,
-            host=host,
-            port=port,
-            database=self.database,
-        )
-        return uri.render_as_string(hide_password=False)
-    
-    
-class TgBot(BaseSettings):
-    """
-    Creates the TgBot object from environment variables.
-    """
-    bot_token: str
-    admin_ids: list[int]
-    use_redis: bool
-    krdict_api_key: str
-    
-
-class Miscellaneous(BaseSettings):
-    logfire_api_key: str = None
-    
-    
+    # def construct_sqlalchemy_url(self, driver="asyncpg", host=None, port=None) -> str:
+    #     """
+    #     Constructs and returns a SQLAlchemy URL for this database configuration.
+    #     """
+    #     # TODO: If you're using SQLAlchemy, move the import to the top of the file!
+    #     from sqlalchemy.engine.url import URL
+    #
+    #     if not host:
+    #         host = self.host
+    #     if not port:
+    #         port = self.port
+    #     uri = URL.create(
+    #         drivername=f"postgresql+{driver}",
+    #         username=self.user,
+    #         password=self.password,Е
+    #         host=host,
+    #         port=port,
+    #         database=self.database,
+    #     )
+    #     return uri.render_as_string(hide_password=False)
     
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', env_nested_delimiter = "__")
-    
-    tg_bot: TgBot = TgBot()
-    qdrant: QdrantConfig = QdrantConfig()
-    misc: Miscellaneous = Miscellaneous()
+
+    qdrant_collection_name: str = "korean_grammar"
+    qdrant_host: str = "localhost"
+    qdrant_port: int = 6333
+
+    bot_token: str | None = None
+    admin_ids: list[int] | None = None
+    use_redis: bool | None = None
+    krdict_api_key: str | None = None
+
+    logfire_api_key: str | None = None
+
+    embedding_model: str = "text-embedding-3-small"
+    sparse_embedding_model: str = 'Qdrant/bm25'
+    reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
+
+    # db_host: str
+    # db_password: str
+    # db_user: str
+    # db_name: str
+    # db_port: int
     
     # db: DbConfig = DbConfig()
     # redis: Optional[RedisConfig] = RedisConfig()
-    
+
 #TODO Implement redis if needed
 
 # @dataclass

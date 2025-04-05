@@ -93,7 +93,7 @@ def get_storage(config):
 
     """
     # TODO Configure for Redis
-    if config.tg_bot.use_redis:
+    if config.use_redis:
         return RedisStorage.from_url(
             config.redis.dsn(),
             key_builder=DefaultKeyBuilder(with_bot_id=True, with_destiny=True),
@@ -108,14 +108,14 @@ async def main():
     config = Config()
     storage = get_storage(config)
 
-    bot = Bot(token=config.tg_bot.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
+    bot = Bot(token=config.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
     dp = Dispatcher(storage=storage)
 
     dp.include_routers(*routers_list)
 
     register_global_middlewares(dp, config)
 
-    await on_startup(bot, config.tg_bot.admin_ids)
+    await on_startup(bot, config.admin_ids)
     await dp.start_polling(bot)
 
 

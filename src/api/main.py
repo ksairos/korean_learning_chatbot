@@ -8,10 +8,12 @@ from src.config.settings import Config
 from src.llm_agent.agent import agent
 
 app = FastAPI()
-logfire.configure(send_to_logfire="if-token-present")
 
 config = Config()
-bot = Bot(token=config.tg_bot.bot_token)
+bot = Bot(token=config.bot_token)
+
+logfire.configure(token=config.logfire_api_key)
+logfire.instrument_fastapi(app)
 
 class Message(BaseModel):
     user_prompt: str
