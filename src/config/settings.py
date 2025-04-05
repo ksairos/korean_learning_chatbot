@@ -25,6 +25,7 @@ class Config(BaseSettings):
 
     qdrant_collection_name: str = "korean_grammar"
     qdrant_host: str = "localhost"
+    qdrant_host_docker: str = "qdrant"
     qdrant_port: int = 6333
 
     bot_token: str | None = None
