@@ -1,9 +1,3 @@
-"""
-Script to create a Qdrant collection and upload grammar entries.
-This script reads JSON grammar entries, converts them to vectors using a sentence
-transformer model, and uploads them to a Qdrant collection.
-"""
-
 import json
 import logging
 
@@ -37,8 +31,9 @@ client = QdrantClient(
 
 bm25_embedding_model = SparseTextEmbedding(config.sparse_embedding_model)
 
+
 def get_embedding(text: str) -> List[float]:
-    """Get embedding vector from OpenAI."""
+    """Generate embedding vector from OpenAI."""
     try:
         response = openai_client.embeddings.create(
             model= config.embedding_model,
@@ -49,15 +44,10 @@ def get_embedding(text: str) -> List[float]:
         print(f"Error getting embedding: {e}")
         return [0] * 1536  # Return zero vector on error
 
+
 def reformat_for_embedding(entry: dict) -> str:
     """
     Reformat a single JSON entry into a single string for embedding.
-
-    Args:
-        entry (dict): The JSON entry with keys such as 'description', 'usage_form', 'examples', etc.
-
-    Returns:
-        str: A concatenated string containing the main textual content.
     """
     parts = []
 
@@ -106,11 +96,13 @@ def reformat_for_embedding(entry: dict) -> str:
     # Combine all parts into one final string separated by newlines
     return "\n".join(parts)
 
+
+
 def load_json_entries(dir_path: str) -> List[Dict[str, Any]]:
     """Load all JSON grammar entries from a directory."""
     entries = []
     path = Path(dir_path)
-    
+
     # If path is a file, and it's a combined JSON file
     if path.is_file() and path.name.endswith('.json'):
         with open(path, 'r', encoding='utf-8') as f:
@@ -119,7 +111,7 @@ def load_json_entries(dir_path: str) -> List[Dict[str, Any]]:
                 return data
             else:
                 return [data]
-    
+
     return entries
 
 def create_qdrant_collection(collection_name: str = config.qdrant_collection_name) -> None:
@@ -152,32 +144,30 @@ def create_qdrant_collection(collection_name: str = config.qdrant_collection_nam
     else:
         logger.info(f"Collection {collection_name} already exists")
 
-def main():
-    """Main function to create a Qdrant collection and upload grammar entries."""
-    
+def main():        
     # Create collection
     create_qdrant_collection()
-    
+
     # Load grammar entries
-    data_dir = Path("../data/grammar-level-1")
+    print(Path.cwd())
+    data_dir = Path("data/grammar-level-1")
     all_entries_file = data_dir / "entries.json"
-    
+
     if all_entries_file.exists():
         entries = load_json_entries(str(all_entries_file))
+        print(f"{len(entries)} grammar entries to upload")
     else:
-        logger.info("Please run parse_md_to_json.py first to generate JSON files.")
-        return
-    
-    logger.info(f"Loaded {len(entries)} grammar entries")
-    
-    # Upload entries to Qdrant
+        print("Please run parse_md_to_json.py first to generate JSON files.")
+
+    # Generate embeddings and create points
+
     points = []
     for i, entry in enumerate(entries):
 
         formatted_entry = reformat_for_embedding(entry)
         vector = get_embedding(formatted_entry)
-        sparse_vector = bm25_embedding_model.embed(formatted_entry)
-        
+        sparse_vector = next(bm25_embedding_model.embed(formatted_entry)).as_object()
+
         points.append(models.PointStruct(
             id=i,
             vector={
@@ -187,13 +177,18 @@ def main():
             payload=entry
         ))
 
+    print(f"Generated {len(points)} points")
+
+    # Ingest points to the vector database
+
     client.upsert(
         collection_name=config.qdrant_collection_name,
         points=points
     )
-    
-    logger.info(f"Upload complete. {len(points)} entries added to {config.qdrant_collection_name} collection.")
-    logger.info(f"You can now query the collection using the Qdrant client.")
+
+    print(f"Upload complete. {len(points)} entries added to {config.qdrant_collection_name} collection.")
+    print(f"You can now query the collection using the Qdrant client.")
+
 
 if __name__ == "__main__":
     main()
