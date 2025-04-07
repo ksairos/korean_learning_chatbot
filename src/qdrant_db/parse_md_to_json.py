@@ -115,7 +115,7 @@ def parse_input(input_text):
 
 if __name__ == "__main__":
     # Read input_text from the specified file
-    with open("../data/grammar-level-1/generated-data.md", "r", encoding="utf-8") as infile:
+    with open("../../data/grammar-level-1/generated-data.md", "r", encoding="utf-8") as infile:
         input_text = infile.read()
 
     result = parse_input(input_text)
@@ -123,5 +123,5 @@ if __name__ == "__main__":
     output_json = json.dumps(result, ensure_ascii=False, indent=2)
 
     # Save the JSON result to the specified file
-    with open("../data/grammar-level-1/entries.json", "w", encoding="utf-8") as outfile:
+    with open("../../data/grammar-level-1/entries.json", "w", encoding="utf-8") as outfile:
         outfile.write(output_json)
