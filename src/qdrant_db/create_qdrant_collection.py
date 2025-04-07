@@ -1,3 +1,8 @@
+"""
+Creates and populates the qdrant collection with Korean grammar
+Notebook version is available at notebooks/create_qdrant_collection.ipynb
+"""
+
 import json
 import logging
 
@@ -93,6 +98,7 @@ def reformat_for_embedding(entry: dict) -> str:
         notes_combined = "; ".join(entry["notes"])
         parts.append(f"ПРИМЕЧАНИЯ: {notes_combined}")
 
+    # TODO: Add irregular verbs examples
     # Combine all parts into one final string separated by newlines
     return "\n".join(parts)
 
@@ -144,12 +150,12 @@ def create_qdrant_collection(collection_name: str = config.qdrant_collection_nam
     else:
         logger.info(f"Collection {collection_name} already exists")
 
-def main():        
+
+if __name__ == "__main__":
     # Create collection
     create_qdrant_collection()
 
     # Load grammar entries
-    print(Path.cwd())
     data_dir = Path("data/grammar-level-1")
     all_entries_file = data_dir / "entries.json"
 
@@ -188,7 +194,3 @@ def main():
 
     print(f"Upload complete. {len(points)} entries added to {config.qdrant_collection_name} collection.")
     print(f"You can now query the collection using the Qdrant client.")
-
-
-if __name__ == "__main__":
-    main()

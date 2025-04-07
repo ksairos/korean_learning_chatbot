@@ -8,7 +8,8 @@ from src.config.settings import Config
 
 from pydantic_ai import Agent, RunContext
 
-from src.schemas.schemas import RetrievedDocs, RetrieverDeps
+from src.llm_agent.agent_tools import retrieve_docs_tool
+from src.schemas.schemas import GrammarEntry, RetrievedDocs, RetrieverDeps
 
 load_dotenv()
 
@@ -24,76 +25,12 @@ agent = Agent(
 )
 
 @agent.tool
-async def retrieve(context: RunContext[RetrieverDeps], search_query: str) -> str:
-    """Retrieve documentation sections based on a search query.
+async def retrieve_docs(context: RunContext[RetrieverDeps], search_query: str):
+    """
+    Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
 
     Args:
-        context: The call context.
-        search_query: The search query.
+        context: the call context
+        search_query: запрос для поиска
     """
-    with logfire.span(
-        f"Creating embedding for search_query = {search_query}"
-    ):
-        vector_query = await context.deps.openai_client.embeddings.create(
-            model=config.embedding_model,
-            input=search_query
-        )
-        sparse_vector_query = next(context.deps.sparse_embedding.query_embed(search_query))
-        sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
-
-    assert len(vector_query.data) == 1, (
-        f'Expected 1 embedding, got {len(vector_query.data)}, doc query: {search_query!r}'
-    )
-
-    vector_query = vector_query.data[0].embedding
-
-    top_k = 5
-    threshold = 0
-
-    bm_25_prefetch = [
-        Prefetch(
-            query=sparse_vector_query,
-            using=config.sparse_embedding_model,
-            limit=top_k,
-            score_threshold=threshold
-        )
-    ]
-
-    logfire.info(f"Prefetch configured for sparse vector")
-
-    logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
-    print(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
-    hits = context.deps.qdrant_client.query_points(
-        collection_name=config.qdrant_collection_name,
-        using=config.embedding_model,
-        query=vector_query,
-        limit=top_k,
-        prefetch=bm_25_prefetch,
-        score_threshold=threshold,
-        with_payload=True
-    ).points
-
-    # hits = hits_response.points
-    logfire.info(f"Received {len(hits)} results from Qdrant.")
-
-    # Convert to schema objects
-    docs = [
-        RetrievedDocs(
-            content=hit.payload["description"],
-            metadata={k: v for k, v in hit.payload.items() if k != "content"},
-            score=hit.score,
-        ) for hit in hits
-    ]
-
-    return '\n\n'.join(
-        f"{doc.metadata}" for doc in docs
-    )
-
-
-
-
-
-
-
-
-
+    return await retrieve_docs_tool(context, search_query)

@@ -1,3 +1,8 @@
+"""
+Takes a markdown file with all grammar entries and converts it to JSON.
+Used before the create_qdrant_collection.py or create_qdrant_collection.ipynb
+"""
+
 import json
 import re
 
@@ -77,6 +82,7 @@ def parse_entry(text):
             if match:
                 notes.append(match.group(1).strip())
 
+        # TODO: Add irregular verbs examples
         i += 1
 
     # Clean up extra spaces.
