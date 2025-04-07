@@ -1,10 +1,12 @@
+from typing import Callable
+
 import krdict
 import re
 
-from aiogram import types, Router, F
+from aiogram import Router, F
 from aiogram.filters import StateFilter, Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, ReplyKeyboardRemove, Message
 from aiogram.utils.markdown import hcode
 
 from src.config.settings import Config
@@ -93,6 +95,7 @@ def format_dictionary_response_custom(response):
 
     return formatted_results
 
+
 def format_examples(response, page=0, per_page=5, original_word=None):
     """
     Format examples from the API response with pagination.
@@ -145,21 +148,31 @@ def format_examples(response, page=0, per_page=5, original_word=None):
 
     return formatted_output
 
-# Command to enter the dictionary mode
-@dictionary_router.message(Command("vocab"))
-async def start_vocab_mode(message: types.Message, state: FSMContext):
+
+async def start_vocab_mode(state: FSMContext, answer_function: Callable):
     """Handler for /vocab command to enter the dictionary mode"""
     # Set the state to active vocabulary mode
     await state.set_state(VocabState.active)
-    
-    await message.answer(
+
+    await answer_function(
         "🔍 Вы вошли в режим корейского словаря. Отправьте слово, чтобы получить его перевод.\n\n"
         "Чтобы выйти из режима словаря, нажмите кнопку 'Выйти из словаря 🚪' или отправьте команду /exit."
     )
 
+# Command to enter the dictionary mode through button (callback)
+@dictionary_router.callback_query(F.data == "vocab")
+async def start_vocab_mode_callback(query: CallbackQuery, state: FSMContext):
+    await query.answer()
+    await start_vocab_mode(state, query.message.answer)
+
+# Command to enter the dictionary mode through /vocab
+@dictionary_router.message(Command("vocab"))
+async def start_vocab_mode_message(message: Message, state: FSMContext):
+    await start_vocab_mode(state, message.answer)
+
 # Handler for exiting vocab mode via command
 @dictionary_router.message(Command("exit"), StateFilter(VocabState.active))
-async def exit_vocab_mode_command(message: types.Message, state: FSMContext):
+async def exit_vocab_mode_command(message: Message, state: FSMContext):
     """Handler to exit the dictionary mode using command"""
     await state.clear()
     await message.answer(
@@ -169,7 +182,7 @@ async def exit_vocab_mode_command(message: types.Message, state: FSMContext):
 
 # Handler for text messages when in vocab mode
 @dictionary_router.message(F.text, StateFilter(VocabState.active))
-async def dictionary_bot(message: types.Message, state: FSMContext):
+async def dictionary_bot(message: Message, state: FSMContext):
     """Handler for dictionary queries when in vocab mode"""
     response = krdict.search(
         search_type=krdict.SearchType.WORD,

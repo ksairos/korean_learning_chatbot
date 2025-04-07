@@ -1,7 +1,5 @@
 from aiogram import types, Router, F
 from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
-from aiogram.utils.markdown import hcode
 import aiohttp
 import logging
 
@@ -32,14 +30,3 @@ async def bot_echo(message: types.Message):
                     await message.answer("Something went wrong, please try again.")
     except Exception as e:
         logging.error(f"Error processing message via API: {e}")
-
-
-@chat_router.message(F.text)
-async def bot_echo_all(message: types.Message, state: FSMContext):
-    state_name = await state.get_state()
-    text = [
-        f"Echo with state {hcode(state_name)}",
-        "Message Content:",
-        hcode(message.text),
-    ]
-    await message.answer("\n".join(text))
