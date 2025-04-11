@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import krdict
 import re
@@ -182,11 +182,15 @@ async def exit_vocab_mode_command(message: Message, state: FSMContext):
 
 # Handler for text messages when in vocab mode
 @dictionary_router.message(F.text, StateFilter(VocabState.active))
-async def dictionary_bot(message: Message, state: FSMContext):
+async def dictionary_bot(message: Message, state: FSMContext, query: Optional[str] = None):
     """Handler for dictionary queries when in vocab mode"""
+
+    if not query:
+        query = message.text
+
     response = krdict.search(
         search_type=krdict.SearchType.WORD,
-        query=message.text,
+        query=query,
         raise_api_errors=True,
         translation_language='russian',
         per_page=10

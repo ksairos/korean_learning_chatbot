@@ -6,7 +6,8 @@ from chatgpt_md_converter import telegram_format
 import aiohttp
 import logging
 
-from src.tgbot.handlers.vocab import start_vocab_mode
+from src.tgbot.handlers.vocab import dictionary_bot
+from src.tgbot.misc.states import VocabState
 
 chat_router = Router()
 
@@ -26,14 +27,16 @@ async def invoke(message: types.Message, state: FSMContext):
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    llm_response = data["response"]
+                    llm_response = data["llm_response"]
+                    mode = data["mode"]
 
-                    formatted_response = telegram_format(llm_response)
-                    
-                    await message.answer(formatted_response)
-                    
-                    # TODO можно попробовать тут триггерить режимы, в зависимости от ответа 
-                    # await start_vocab_mode(state, message.answer)
+                    if mode == "vocab":
+                        await state.set_state(VocabState.active)
+                        await dictionary_bot(message, state, llm_response)
+
+                    else:
+                        formatted_response = telegram_format(llm_response)
+                        await message.answer(formatted_response)
                     
                 else:
                     logging.error(f"API error: {response.status}, {await response.text()}")

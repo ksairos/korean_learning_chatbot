@@ -10,7 +10,7 @@ from qdrant_client import AsyncQdrantClient, QdrantClient
 
 from src.config.settings import Config
 from src.llm_agent.agent import router_agent
-from src.schemas.schemas import RouterAgentDeps
+from src.schemas.schemas import RouterAgentDeps, RouterAgentResult
 
 app = FastAPI()
 
@@ -53,11 +53,13 @@ async def process_message(message: Message):
     response = await router_agent.run(
         user_prompt=message.user_prompt,
         deps=deps,
-        usage_limits=UsageLimits(request_limit=2)
+        usage_limits=UsageLimits(request_limit=5),
+        result_type=RouterAgentResult
     )
 
     # response = await grammar_agent.run(message.user_prompt, deps=deps)
     logfire.info("Response: {response}", response=response.data)
     return {
-        "response" : response.data,
+        "llm_response" : response.data.llm_response,
+        "mode" : response.data.mode
     }

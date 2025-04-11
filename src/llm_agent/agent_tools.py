@@ -41,7 +41,7 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
 
     vector_query = vector_query.data[0].embedding
 
-    top_k = 5
+    top_k = 10
     threshold = 0
 
     bm_25_prefetch = [

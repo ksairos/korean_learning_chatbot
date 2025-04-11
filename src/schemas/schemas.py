@@ -21,7 +21,7 @@ class TranslationAgentResult(BaseModel):
 
 class RouterAgentResult(BaseModel):
     llm_response: str
-    mode: Literal["answer", "vocab"] = "answer"
+    mode: Literal["direct_grammar_answer", "thinking_grammar_answer", "translation", "vocab"] = "answer"
 
 
 class GrammarEntry(BaseModel):
