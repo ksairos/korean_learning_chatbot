@@ -8,7 +8,6 @@ services:
     depends_on:
       - api
       - qdrant
-    command: python -m src.tgbot.bot
     develop:
       watch:
        - path: src/
@@ -27,7 +26,6 @@ services:
       - qdrant
     ports:
       - "8000:8000"
-    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./data:/app/data
 #    networks:

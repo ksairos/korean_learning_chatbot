@@ -83,10 +83,10 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
     
     else:
 
-        # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
-        #     f"{doc.content.model_dump_json(indent=2)}" for doc in docs
-        # )
+        formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
+            f"{doc.content.model_dump_json(indent=2)}" for doc in docs
+        )
 
-        logfire.info(f"docs: {docs}")
+        logfire.info(f"Formatted docks: {formatted_docs}")
 
-        return docs
+        return formatted_docs

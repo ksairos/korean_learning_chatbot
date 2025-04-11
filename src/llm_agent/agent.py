@@ -84,11 +84,8 @@ router_agent = Agent(
         
         Use expandable blockquotes for:
         
-        - Detailed explanations
-        - Long examples
-        - Optional reading
-        - Technical details
-        - Additional context not needed by all users
+        - Примеры
+        - 
 
         """
         # Пользователь задаёт вопросы, связанные с возможностями, использованием и областью применения чат-бота.
