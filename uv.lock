@@ -453,6 +453,15 @@ wheels = [
 ]
 
 [[package]]
+name = "chatgpt-md-converter"
+version = "0.3.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/28/c22ce53eb9a05cf03bd5d26478b641977e3bec9a944e2cf12e49af42f386/chatgpt_md_converter-0.3.4.tar.gz", hash = "sha256:a92c02b8a0de39aa8210eb1e2c831b2f5a31affd9c8c7dedc363538bef4f8a04", size = 12361 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/21/63/403df1b0c25b763fbc8836ac85d033687e6c14353c8676176dc63754d6a1/chatgpt_md_converter-0.3.4-py3-none-any.whl", hash = "sha256:15d34f6a4be849cd85ec8fb1c345b3c164a8674b3196a5d83424c23f39c99c36", size = 9187 },
+]
+
+[[package]]
 name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
@@ -1463,6 +1472,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "backoff" },
     { name = "betterlogging" },
+    { name = "chatgpt-md-converter" },
     { name = "environs" },
     { name = "fastapi" },
     { name = "fastembed" },
@@ -1490,6 +1500,7 @@ api = [
 tgbot = [
     { name = "aiogram" },
     { name = "betterlogging" },
+    { name = "chatgpt-md-converter" },
     { name = "environs" },
     { name = "krdict-py" },
     { name = "lxml" },
@@ -1506,6 +1517,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "backoff", specifier = ">=2.2.1" },
     { name = "betterlogging", specifier = ">=1.0.0" },
+    { name = "chatgpt-md-converter", specifier = ">=0.3.4" },
     { name = "environs", specifier = "~=9.0" },
     { name = "fastapi", specifier = ">=0.115.11" },
     { name = "fastembed", specifier = ">=0.6.0" },
@@ -1533,6 +1545,7 @@ api = [
 tgbot = [
     { name = "aiogram", specifier = ">=3.18.0" },
     { name = "betterlogging", specifier = ">=1.0.0" },
+    { name = "chatgpt-md-converter", specifier = ">=0.3.4" },
     { name = "environs", specifier = ">=9.5.0" },
     { name = "krdict-py", specifier = ">=3.0.2" },
     { name = "lxml", specifier = ">=5.3.1" },

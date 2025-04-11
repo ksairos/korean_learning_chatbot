@@ -14,8 +14,8 @@ services:
        - path: src/
          action: sync+restart
          target: src/
-    networks:
-      - botnet
+#    networks:
+#      - botnet
 
   api:
     build:
@@ -30,8 +30,8 @@ services:
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./data:/app/data
-    networks:
-      - botnet
+#    networks:
+#      - botnet
     
   qdrant:
     image: qdrant/qdrant
@@ -43,8 +43,8 @@ services:
       - "6334"
     volumes:
       - qdrant_storage:/qdrant/storage
-    networks:
-      - botnet
+#    networks:
+#      - botnet
 #  postgres:
 #    image: postgres:15
 #    restart: always
@@ -82,7 +82,7 @@ services:
 volumes:
   qdrant_storage:
 
-networks:
-  botnet:
+#networks:
+#  botnet:
 #  postgres_data:
 #  redis_data:

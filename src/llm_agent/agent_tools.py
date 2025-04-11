@@ -11,14 +11,14 @@ from src.config.settings import Config
 
 from pydantic_ai import RunContext
 
-from src.schemas.schemas import GrammarEntry, RetrievedDocs, RetrieverDeps
+from src.schemas.schemas import GrammarEntry, RetrievedDocs, RouterAgentDeps
 
 load_dotenv()
 config = Config()
 logfire.configure(token=config.logfire_api_key)
 
 
-async def retrieve_docs_tool(context: RunContext[RetrieverDeps], search_query: str) -> str:
+async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query: str):
     """Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
 
     Args:
@@ -56,7 +56,6 @@ async def retrieve_docs_tool(context: RunContext[RetrieverDeps], search_query: s
     logfire.info(f"Prefetch configured for sparse vector")
 
     logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
-    print(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
     hits = context.deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name,
         using=config.embedding_model,
@@ -77,11 +76,17 @@ async def retrieve_docs_tool(context: RunContext[RetrieverDeps], search_query: s
             score=hit.score,
         ) for hit in hits
     ]
+    
+    if not docs:
+        logfire.info("No documents found.")
+        return "Нет подходящих грамматик"
+    
+    else:
 
-    formatted_docs = '\n\n'.join(
-        f"{doc.content.model_dump_json(indent=2)}" for doc in docs
-    )
+        # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
+        #     f"{doc.content.model_dump_json(indent=2)}" for doc in docs
+        # )
 
-    logfire.info(f"Formatted docs: {formatted_docs}")
+        logfire.info(f"docs: {docs}")
 
-    return formatted_docs
+        return docs
