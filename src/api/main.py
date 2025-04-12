@@ -3,6 +3,7 @@ import logfire
 from aiogram import Bot
 from fastapi import FastAPI
 from fastembed import SparseTextEmbedding
+from sentence_transformers import CrossEncoder
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from pydantic_ai.usage import UsageLimits
@@ -24,6 +25,7 @@ qdrant_client = QdrantClient(
     port=config.qdrant_port,
 )
 sparse_embedding = SparseTextEmbedding(config.sparse_embedding_model)
+reranking_model = CrossEncoder(config.reranking_model)
 
 
 logfire.configure(token=config.logfire_api_key)
@@ -48,6 +50,7 @@ async def process_message(message: Message):
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
+        reranking_model=reranking_model
     )
     
     response = await router_agent.run(

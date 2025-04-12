@@ -18,12 +18,13 @@ config = Config()
 logfire.configure(token=config.logfire_api_key)
 
 
-async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query: str):
+async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query: str, top_k: int = 5):
     """Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
 
     Args:
         context: the call context
         search_query: запрос для поиска
+        top_k: количество результатов ПОСЛЕ reranking-а
     """
     with logfire.span(
             f"Creating embedding for search_query = {search_query}"
@@ -41,14 +42,13 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
 
     vector_query = vector_query.data[0].embedding
 
-    top_k = 10
     threshold = 0
 
     bm_25_prefetch = [
         Prefetch(
             query=sparse_vector_query,
             using=config.sparse_embedding_model,
-            limit=top_k,
+            limit=10,
             score_threshold=threshold
         )
     ]
@@ -76,17 +76,32 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
             score=hit.score,
         ) for hit in hits
     ]
-    
+
     if not docs:
         logfire.info("No documents found.")
         return "Нет подходящих грамматик"
     
     else:
+        # TODO cross encoder works with the description only now. Test other variations
+        cross_input = [[search_query, doc.content.description] for doc in docs]
+        logfire.info(f"Cross input: {cross_input}")
+        scores = context.deps.reranking_model.predict(cross_input)
+
+        # Add cross-encoder scores to docs
+        for idx in range(len(scores)):
+            docs[idx].cross_score = scores[idx]
+            logfire.info(f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}")
+
+        # Sort by cross-encoder score
+        sorted_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
         formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
-            f"{doc.content.model_dump_json(indent=2)}" for doc in docs
+            f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
         )
 
         logfire.info(f"Formatted docks: {formatted_docs}")
 
         return formatted_docs
+
+async def rewrite_docs_tool(context: RunContext[RouterAgentDeps], search_query: str):
+    pass

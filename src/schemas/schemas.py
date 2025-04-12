@@ -5,14 +5,17 @@ from fastembed import SparseTextEmbedding
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
-    
+from sentence_transformers import CrossEncoder
+
 
 @dataclass
 class RouterAgentDeps:
     openai_client: AsyncOpenAI
-    sparse_embedding: SparseTextEmbedding
     # TODO: Add async support using AsyncQdrantClient
     qdrant_client: QdrantClient
+    sparse_embedding: SparseTextEmbedding
+    reranking_model: CrossEncoder
+
     
 
 class TranslationAgentResult(BaseModel):
