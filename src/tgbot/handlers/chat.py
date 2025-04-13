@@ -30,13 +30,9 @@ async def invoke(message: types.Message, state: FSMContext):
                     llm_response = data["llm_response"]
                     mode = data["mode"]
 
-                    if mode == "vocab":
-                        await state.set_state(VocabState.active)
-                        await dictionary_bot(message, state, llm_response)
+                    formatted_response = telegram_format(llm_response)
 
-                    else:
-                        formatted_response = telegram_format(llm_response)
-                        await message.answer(formatted_response)
+                    await message.answer(formatted_response)
                     
                 else:
                     logging.error(f"API error: {response.status}, {await response.text()}")

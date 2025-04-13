@@ -1,16 +1,15 @@
 import logfire
 
 from dotenv import load_dotenv
-from qdrant_client.http.models import SparseVector, Prefetch
 
 from src.config.prompts import prompts
 from src.config.settings import Config
 
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.usage import UsageLimits
 
 
 from src.llm_agent.agent_tools import retrieve_docs_tool
+from src.llm_agent.utils.json_to_telegram_md import grammar_entry_to_markdown
 from src.schemas.schemas import RouterAgentDeps, TranslationAgentResult, RouterAgentResult
 
 load_dotenv()
@@ -58,7 +57,11 @@ async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_q
             context: the call context
             search_query: запрос для поиска
         """
-    return await retrieve_docs_tool(context, search_query, 2)
+    docs = await retrieve_docs_tool(context, search_query, 1)
+    logfire.info(f"Retrieved docs: {docs}")
+    doc = docs[0].content
+
+    return grammar_entry_to_markdown(doc)
 
 
 

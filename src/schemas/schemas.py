@@ -24,7 +24,12 @@ class TranslationAgentResult(BaseModel):
 
 class RouterAgentResult(BaseModel):
     llm_response: str
-    mode: Literal["direct_grammar_answer", "thinking_grammar_answer", "translation", "vocab"] = "answer"
+    mode: Literal[
+        "direct_grammar_answer",
+        "thinking_grammar_answer",
+        "translation",
+        "direct_answer"
+    ] = "direct_answer"
 
 
 class GrammarEntry(BaseModel):
@@ -39,7 +44,7 @@ class GrammarEntry(BaseModel):
     # with_irregular_verbs: Optional[List[str]]
 
 
-class RetrievedDocs(BaseModel):
+class RetrievedDoc(BaseModel):
     content: GrammarEntry
     score: float
     cross_score: Optional[float] = None

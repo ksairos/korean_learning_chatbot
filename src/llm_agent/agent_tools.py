@@ -11,7 +11,7 @@ from src.config.settings import Config
 
 from pydantic_ai import RunContext
 
-from src.schemas.schemas import GrammarEntry, RetrievedDocs, RouterAgentDeps
+from src.schemas.schemas import GrammarEntry, RetrievedDoc, RouterAgentDeps
 
 load_dotenv()
 config = Config()
@@ -71,7 +71,7 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
 
     # Convert to schema objects
     docs = [
-        RetrievedDocs(
+        RetrievedDoc(
             content=GrammarEntry(**hit.payload),
             score=hit.score,
         ) for hit in hits
@@ -89,19 +89,19 @@ async def retrieve_docs_tool(context: RunContext[RouterAgentDeps], search_query:
 
         # Add cross-encoder scores to docs
         for idx in range(len(scores)):
-            docs[idx].cross_score = scores[idx]
+            docs[idx].cross_score = float(scores[idx])
             logfire.info(f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}")
 
         # Sort by cross-encoder score
         sorted_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
-        formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
-            f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
-        )
+        # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
+        #     f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
+        # )
 
-        logfire.info(f"Formatted docks: {formatted_docs}")
+        logfire.info(f"Formatted docks: {sorted_docs}")
 
-        return formatted_docs
+        return sorted_docs
 
 async def rewrite_docs_tool(context: RunContext[RouterAgentDeps], search_query: str):
     pass
