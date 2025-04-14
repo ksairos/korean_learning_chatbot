@@ -1,13 +1,11 @@
 from aiogram import types, Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.methods import get_chat
 from chatgpt_md_converter import telegram_format
 
 import aiohttp
 import logging
-
-from src.tgbot.handlers.vocab import dictionary_bot
-from src.tgbot.misc.states import VocabState
 
 chat_router = Router()
 

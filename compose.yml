@@ -1,35 +1,45 @@
 services:
-  tgbot:
+  app-base:
     build:
       context: .
-      dockerfile: src/tgbot/Dockerfile
+      dockerfile: Dockerfile
+    image: korean-learning-app-base
+    env_file:
+      - .env
+    networks:
+      - app-network
+  
+  tgbot:
+    image: korean-learning-app-base
     env_file:
       - .env
     depends_on:
       - api
       - qdrant
+      - postgres
+    command: ["python", "-m", "src.tgbot.bot"]
     develop:
       watch:
        - path: src/
          action: sync+restart
          target: src/
-#    networks:
-#      - botnet
+    networks:
+      - app-network
 
   api:
-    build:
-      context: .
-      dockerfile: src/api/Dockerfile
+    image: korean-learning-app-base
     env_file:
       - .env
     depends_on:
       - qdrant
+      - postgres
+    command: ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-#    networks:
-#      - botnet
+    networks:
+      - app-network
     
   qdrant:
     image: qdrant/qdrant
@@ -41,20 +51,29 @@ services:
       - "6334"
     volumes:
       - qdrant_storage:/qdrant/storage
-#    networks:
-#      - botnet
-#  postgres:
-#    image: postgres:15
-#    restart: always
-#    ports:
-#      - "5432:5432"
-#    env_file:
-#      - .env
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data/
-#    networks:
-#      - botnet
-#
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - app-network
+
+volumes:
+  qdrant_storage:
+  postgres_data:
+  #  redis_data:
+
+networks:
+  app-network:
+
 #  redis:
 #    image: redis:7
 #    restart: always
@@ -77,10 +96,3 @@ services:
 #    networks:
 #      - botnet
 #
-volumes:
-  qdrant_storage:
-
-#networks:
-#  botnet:
-#  postgres_data:
-#  redis_data:

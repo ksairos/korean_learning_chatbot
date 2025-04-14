@@ -7,7 +7,6 @@ from aiogram import Router, F
 from aiogram.filters import StateFilter, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ReplyKeyboardRemove, Message
-from aiogram.utils.markdown import hcode
 
 from src.config.settings import Config
 from src.tgbot.keyboards.vocab_keyboard import word_keyboard, examples_keyboard, exit_keyboard

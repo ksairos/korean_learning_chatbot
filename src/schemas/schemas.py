@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from sentence_transformers import CrossEncoder
+from sqlalchemy.orm import Session
 
 
 @dataclass
@@ -15,6 +16,7 @@ class RouterAgentDeps:
     qdrant_client: QdrantClient
     sparse_embedding: SparseTextEmbedding
     reranking_model: CrossEncoder
+    db: Session
 
     
 

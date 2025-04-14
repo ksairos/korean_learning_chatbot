@@ -2,14 +2,17 @@ import logfire
 
 from aiogram import Bot
 from fastapi import FastAPI
+from fastapi.params import Depends
 from fastembed import SparseTextEmbedding
 from sentence_transformers import CrossEncoder
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from pydantic_ai.usage import UsageLimits
 from qdrant_client import AsyncQdrantClient, QdrantClient
+from sqlalchemy.orm import Session
 
 from src.config.settings import Config
+from src.db.database import get_db
 from src.llm_agent.agent import router_agent
 from src.schemas.schemas import RouterAgentDeps, RouterAgentResult
 
@@ -41,7 +44,7 @@ async def root():
 
 
 @app.post("/invoke")
-async def process_message(message: Message):
+async def process_message(message: Message, db: Session = Depends(get_db)):
 
     logfire.info(f'User message "{message}"')
     
@@ -50,7 +53,8 @@ async def process_message(message: Message):
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
-        reranking_model=reranking_model
+        reranking_model=reranking_model,
+        db=db
     )
     
     response = await router_agent.run(

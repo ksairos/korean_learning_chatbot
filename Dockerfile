@@ -14,15 +14,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY pyproject.toml .
 COPY uv.lock .
 
-# Then, add the rest of the project source code and install it
-ADD src/tgbot src/tgbot/
-ADD src/config src/config/
-ADD src/schemas src/schemas/
+# Then, add the rest of the project source code
+ADD src src/
 ADD data/ data/
 
 # Installing separately from its dependencies allows optimal layer caching
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --only-group tgbot
+    uv sync --frozen --no-dev
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
@@ -30,4 +28,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["python", "-m", "src.tgbot.bot"]
+# Default command will be overridden by docker-compose
+CMD ["python"]

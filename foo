@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+M ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
 
@@ -19,6 +19,7 @@ ADD src/api src/api/
 ADD src/config src/config/
 ADD src/schemas src/schemas/
 ADD src/llm_agent src/llm_agent/
+ADD src/db src/db
 ADD data/ data/
 
 # Installing separately from its dependencies allows optimal layer caching
@@ -32,3 +33,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 
 CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

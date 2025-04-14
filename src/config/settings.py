@@ -39,11 +39,11 @@ class Config(BaseSettings):
     sparse_embedding_model: str = 'Qdrant/bm25'
     reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
 
-    # db_host: str
-    # db_password: str
-    # db_user: str
-    # db_name: str
-    # db_port: int
+    db_host: str | None = None
+    db_password: str | None = None
+    db_username: str | None = None
+    db_name: str | None = None
+    db_port: int | None = None
     
     # db: DbConfig = DbConfig()
     # redis: Optional[RedisConfig] = RedisConfig()
