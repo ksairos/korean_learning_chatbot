@@ -1,3 +1,7 @@
+from typing import Any
+
+from pydantic import computed_field, PostgresDsn
+from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
     # def construct_sqlalchemy_url(self, driver="asyncpg", host=None, port=None) -> str:
@@ -22,6 +26,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
     #     return uri.render_as_string(hide_password=False)
     
 class Config(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_ignore_empty=True, extra="ignore"
+    )
 
     qdrant_collection_name: str = "korean_grammar"
     qdrant_host: str = "localhost"
@@ -34,16 +41,42 @@ class Config(BaseSettings):
     krdict_api_key: str | None = None
 
     logfire_api_key: str | None = None
+    openai_api_key: str | None = None
 
     embedding_model: str = "text-embedding-3-small"
     sparse_embedding_model: str = 'Qdrant/bm25'
     reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
 
-    db_host: str | None = None
-    db_password: str | None = None
-    db_username: str | None = None
-    db_name: str | None = None
-    db_port: int | None = None
+    postgres_host: str | None = None
+    postgres_password: str | None = None
+    postgres_user: str | None = None
+    postgres_db: str | None = None
+    postgres_port: int | None = None
+
+    @computed_field
+    @property
+    def asyncpg_url(self) -> Any:
+        """
+           This is a computed field that generates a PostgresDsn URL for asyncpg.
+
+           The URL is built using the MultiHostUrl.build method, which takes the following parameters:
+           - scheme: The scheme of the URL. In this case, it is "postgresql+asyncpg".
+           - username: The username for the Postgres database, retrieved from the POSTGRES_USER environment variable.
+           - password: The password for the Postgres database, retrieved from the POSTGRES_PASSWORD environment variable.
+           - host: The host of the Postgres database, retrieved from the POSTGRES_HOST environment variable.
+           - path: The path of the Postgres database, retrieved from the POSTGRES_DB environment variable.
+
+           Returns:
+               PostgresDsn: The constructed PostgresDsn URL for asyncpg.
+        """
+        return MultiHostUrl.build(
+            scheme="postgresql+asyncpg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            path=self.postgres_db,
+        )
     
     # db: DbConfig = DbConfig()
     # redis: Optional[RedisConfig] = RedisConfig()

@@ -1478,7 +1478,7 @@ dependencies = [
     { name = "fastembed" },
     { name = "jupyter" },
     { name = "krdict-py" },
-    { name = "logfire", extra = ["fastapi"] },
+    { name = "logfire", extra = ["fastapi", "sqlalchemy"] },
     { name = "lxml" },
     { name = "psycopg" },
     { name = "psycopg-binary" },
@@ -1489,7 +1489,7 @@ dependencies = [
     { name = "redis" },
     { name = "requests" },
     { name = "sentence-transformers" },
-    { name = "sqlalchemy" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "ujson" },
     { name = "uvicorn" },
     { name = "yarl" },
@@ -1526,7 +1526,7 @@ requires-dist = [
     { name = "fastembed", specifier = ">=0.6.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "krdict-py", specifier = ">=3.0.2" },
-    { name = "logfire", extras = ["fastapi"], specifier = ">=3.9.0" },
+    { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=3.9.0" },
     { name = "lxml", specifier = ">=5.3.1" },
     { name = "psycopg", specifier = ">=3.2.6" },
     { name = "psycopg-binary", specifier = ">=3.2.6" },
@@ -1537,7 +1537,7 @@ requires-dist = [
     { name = "redis", specifier = ">=5.2.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "sentence-transformers", specifier = ">=4.0.2" },
-    { name = "sqlalchemy", specifier = "~=2.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0" },
     { name = "ujson", specifier = ">=5.10.0" },
     { name = "uvicorn", specifier = ">=0.34.0" },
     { name = "yarl", specifier = ">=1.18.3" },
@@ -1591,6 +1591,9 @@ wheels = [
 [package.optional-dependencies]
 fastapi = [
     { name = "opentelemetry-instrumentation-fastapi" },
+]
+sqlalchemy = [
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
 ]
 
 [[package]]
@@ -2273,6 +2276,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/30/92/29d3b07874a77dd578b26a3eefc8fdfb188da039b63bb573cbeb004071c3/opentelemetry_instrumentation_fastapi-0.52b0.tar.gz", hash = "sha256:89d48334db82680db4da2792d5a533a632cb1c8a20342e6263c62a9302658cb2", size = 19247 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/e4/cf52204413891954cd854bd4ffe19d9ef70a510affb835adef4c8d8ac45f/opentelemetry_instrumentation_fastapi-0.52b0-py3-none-any.whl", hash = "sha256:738d93e5ea819c2ce7905395c64acb2792f097697b4d4b2e35a7fee8c692241f", size = 12114 },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-sqlalchemy"
+version = "0.52b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "packaging" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/60/c54b4d9dc751bb12397d5ba63481fd4f06e9fd11ddc68b9f3cc36aca5e63/opentelemetry_instrumentation_sqlalchemy-0.52b0.tar.gz", hash = "sha256:1e474c7596ed0ce5dd7f01fa456b118b4ebfff6c60a6e3f16760cce3d3fd3639", size = 14582 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/13/149c7312c866723d0aa931298f4fc0479c7fb475c9d113bbd4837a91d9db/opentelemetry_instrumentation_sqlalchemy-0.52b0-py3-none-any.whl", hash = "sha256:52b42bbbb7fcc38de63e983a7b221bd48b4a0cd8803d260d4c081dc0a71077b6", size = 14132 },
 ]
 
 [[package]]
@@ -3329,6 +3348,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b4/60/76714cecb528da46bc53a0dd36d1ccef2f74ef25448b630a0a760ad07bdb/sqlalchemy-2.0.39-cp313-cp313-win32.whl", hash = "sha256:23c5aa33c01bd898f879db158537d7e7568b503b15aad60ea0c8da8109adf3e7", size = 2075315 },
     { url = "https://files.pythonhosted.org/packages/5b/7c/76828886d913700548bac5851eefa5b2c0251ebc37921fe476b93ce81b50/sqlalchemy-2.0.39-cp313-cp313-win_amd64.whl", hash = "sha256:4dabd775fd66cf17f31f8625fc0e4cfc5765f7982f94dc09b9e5868182cb71c0", size = 2099175 },
     { url = "https://files.pythonhosted.org/packages/7b/0f/d69904cb7d17e65c65713303a244ec91fd3c96677baf1d6331457fd47e16/sqlalchemy-2.0.39-py3-none-any.whl", hash = "sha256:a1c6b0a5e3e326a466d809b651c63f278b1256146a377a528b6938a279da334f", size = 1898621 },
+]
+
+[package.optional-dependencies]
+asyncio = [
+    { name = "greenlet" },
 ]
 
 [[package]]

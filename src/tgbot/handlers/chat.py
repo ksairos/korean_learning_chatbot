@@ -21,7 +21,10 @@ async def invoke(message: types.Message, state: FSMContext):
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 API_URL,
-                json={"user_prompt": message.text}
+                json={
+                    "user_prompt": message.text,
+                    "chat_id": message.chat.id,
+                }
             ) as response:
                 if response.status == 200:
                     data = await response.json()

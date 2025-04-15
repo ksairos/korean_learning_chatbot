@@ -48,20 +48,19 @@ async def root():
 
 
 @app.post("/invoke")
-async def process_message(message: Message, db: AsyncSession = Depends(get_db)):
+async def process_message(message: Message, session: AsyncSession = Depends(get_db)):
 
     logfire.info(f'User message "{message}"')
-    
     
     deps = RouterAgentDeps(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
         reranking_model=reranking_model,
-        db=db
+        session=session
     )
 
-    r = await db.get(ChatModel, message.chat_id)
+    r = await session.get(ChatModel, message.chat_id)
     message_history = r.message_history
 
     response = await router_agent.run(

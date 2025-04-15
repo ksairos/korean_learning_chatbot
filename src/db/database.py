@@ -1,27 +1,38 @@
-from sqlalchemy import create_engine
+from collections.abc import AsyncGenerator
+
+import logfire
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+from sqlalchemy.orm import DeclarativeBase
 
 from src.config.settings import Config
 
 config = Config()
 
+# logfire.configure(token=config.logfire_api_key)
+
+class Base(DeclarativeBase):
+    pass
+
 SQLALCHEMY_DATABASE_URI = URL.create(
-    drivername="postgresql+psycopg",
-    username=config.db_username,
-    password=config.db_password,
-    host=config.db_host,
-    database=config.db_name,
-    port=config.db_port,
+    drivername="postgresql+asyncpg",
+    username=config.postgres_user,
+    password=config.postgres_password,
+    host=config.postgres_host,
+    database=config.postgres_db,
+    port=config.postgres_port,
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URI)
-session_local = sessionmaker(autoflush=False, bind=engine)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URI)
+async_session = async_sessionmaker(autoflush=False, bind=engine, expire_on_commit=False)
+
+# logfire.instrument_sqlalchemy(engine=engine)
 
 # Dependency to get the database session
-def get_db():
-    database = session_local()
-    try:
-        yield database
-    finally:
-        database.close()
+async def get_db() -> AsyncGenerator:
+    async with async_session() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
