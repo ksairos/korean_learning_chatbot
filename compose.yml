@@ -38,6 +38,7 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+      - model_cache:/root/.cache/huggingface/hub
     networks:
       - app-network
     
@@ -69,6 +70,7 @@ services:
 volumes:
   qdrant_storage:
   postgres_data:
+  model_cache:
   #  redis_data:
 
 networks:
