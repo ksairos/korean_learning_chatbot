@@ -47,34 +47,36 @@ class Config(BaseSettings):
     sparse_embedding_model: str = 'Qdrant/bm25'
     reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
 
-    postgres_host: str | None = None
     postgres_password: str | None = None
     postgres_user: str | None = None
     postgres_db: str | None = None
+    postgres_host: str | None = None
     postgres_port: int | None = None
+
+    postgres_host_ext: str | None = None
+    postgres_port_ext: int | None = None
 
     @computed_field
     @property
     def asyncpg_url(self) -> Any:
-        """
-           This is a computed field that generates a PostgresDsn URL for asyncpg.
-
-           The URL is built using the MultiHostUrl.build method, which takes the following parameters:
-           - scheme: The scheme of the URL. In this case, it is "postgresql+asyncpg".
-           - username: The username for the Postgres database, retrieved from the POSTGRES_USER environment variable.
-           - password: The password for the Postgres database, retrieved from the POSTGRES_PASSWORD environment variable.
-           - host: The host of the Postgres database, retrieved from the POSTGRES_HOST environment variable.
-           - path: The path of the Postgres database, retrieved from the POSTGRES_DB environment variable.
-
-           Returns:
-               PostgresDsn: The constructed PostgresDsn URL for asyncpg.
-        """
         return MultiHostUrl.build(
             scheme="postgresql+asyncpg",
             username=self.postgres_user,
             password=self.postgres_password,
             host=self.postgres_host,
             port=self.postgres_port,
+            path=self.postgres_db,
+        )
+
+    @computed_field
+    @property
+    def asyncpg_url_ext(self) -> Any:
+        return MultiHostUrl.build(
+            scheme="postgresql+asyncpg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host_ext,
+            port=self.postgres_port_ext,
             path=self.postgres_db,
         )
     

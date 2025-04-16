@@ -30,7 +30,7 @@ qdrant_client = QdrantClient(
 )
 
 # Set up in compose using model_cache volume
-sparse_embedding = SparseTextEmbedding(config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub")
+sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub")
 reranking_model = CrossEncoder(config.reranking_model, cache_folder="/root/.cache/huggingface/hub")
 
 

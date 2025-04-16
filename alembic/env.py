@@ -1,8 +1,4 @@
 import asyncio
-from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -32,7 +28,7 @@ async def run_migrations_online():
     and associate a connection with the context.
 
     """
-    url = config.asyncpg_url.unicode_string()
+    url = config.asyncpg_url_ext.unicode_string()
     connectable = create_async_engine(
         url, future=True
     )
