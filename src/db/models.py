@@ -1,25 +1,71 @@
-from typing import List
+from datetime import datetime, timezone
+from typing import Optional
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
 
 
 class UserModel(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True)
+    first_name: Mapped[str]
+    last_name: Mapped[Optional[str]] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
 
-    chats: Mapped[List["ChatModel"]] = relationship(back_populates="user")
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), unique=True)
+    chat: Mapped["ChatModel"] = relationship(
+        "ChatModel",
+        back_populates="user",
+        uselist=False
+    )
+
 
 class ChatModel(Base):
-    __tablename__ = 'chats'
+    __tablename__ = "chats"
 
-    chat_id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    message_history: Mapped[JSONB] = mapped_column(JSONB, default=list, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
 
-    user: Mapped["UserModel"] = relationship(back_populates="chats")
+    # Relationship to raw message blobs
+    messages: Mapped[list["MessageBlobModel"]] = relationship(
+        "MessageBlobModel", 
+        back_populates="chat", 
+        lazy="selectin"
+    )
+    user: Mapped["UserModel"] = relationship(
+        "UserModel",
+        back_populates="chat",
+        uselist=False
+    )
 
+
+class MessageBlobModel(Base):
+    __tablename__ = "message_blobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(
+        ForeignKey("chats.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    
+    chat: Mapped['ChatModel'] = relationship(
+        'ChatModel', 
+        back_populates='messages'
+    )
