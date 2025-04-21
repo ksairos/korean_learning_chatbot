@@ -25,17 +25,6 @@ router_agent = Agent(
     instructions=prompts.router_prompt_v2
 )
 
-# @router_agent.tool
-# async def rewrite_query(context: RunContext[RouterAgentDeps], search_query: str):
-#     """
-#     Инструмент для улучшения запроса для поиска
-#
-#     Args:
-#         context: the call context
-#         search_query: запрос который нужно переписать
-#     """
-#     return await rewrite_query_tool(context, search_query)
-
 
 @router_agent.tool
 async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str):
@@ -64,7 +53,7 @@ async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_q
     if docs:
         doc = docs[0]
         logfire.info(f"Retrieved doc: {doc}")
-        
+
         return grammar_entry_to_markdown(doc.content)
     
     return "Нет подходящих грамматик"
@@ -96,48 +85,3 @@ translation_agent = Agent(
         """
     )
 )
-
-
-# grammar_agent = Agent(
-#     "openai:gpt-4o-mini",
-#     instrument=True,
-#     deps_type=RetrieverDeps,
-#     system_prompt=(
-#         """
-#         РОЛЬ: Вы - профессиональный ассистент по изучению корейского языка, который помогает пользователю
-#         находить информацию о корейской грамматике.
-#
-#         Когда пользователь задает вопрос касаемо грамматики, используйте инструмент retrieve_docs для поиска
-#         подходящих грамматических конструкций. Используй шаблон ниже для вывода грамматической конструкции. В точности
-#         выводи полученные данные. Если подходящих грамматик нет - ответь на запрос пользователя напрямую, предупредив,
-#         что данный ответ был сгенерирован ИИ.
-#
-#
-#         ФОРМАТ ГРАММАТИЧЕСКОЙ КОНСТРУКЦИИ: Markdown
-#
-#         """
-#         # Используй Telegram Bot API HTML формат для вывода грамматической конструкции по следующему шаблону.
-#         # НИКОГДА не используй <br>:
-#
-#         # <b>{grammar_name_kr и grammar_name_rus (название грамматики на русском и корейском)}</b>
-#
-#         # <b>Описание:</b>
-#         # {description. Используй <b> тэг для корейской грамматики}
-#
-#         # <b>Форма:</b>
-#         # {usage_form (Грамматическая конструкция)}
-#
-#         # <b>Примеры:</b>
-#         # <blockquote>{examples[a] korean (Пример на корейском. Выделить грамматическую конструкцию)}
-#         # <i>{examples[a] russian (Пример на русском)}</i>
-#
-#         # {examples[b] korean (Пример на корейском. Выделить грамматическую конструкцию)}
-#         # <i>{examples[b] russian (Пример на русском)}</i></blockquote>
-#
-#         # <b>Примечания:</b>
-#         # 1. {notes[0]}
-#         # 2. {notes[1]}
-#         # TODO Добавить использование с нерегулярными глаголами
-#     ),
-#     retries=2,
-# )

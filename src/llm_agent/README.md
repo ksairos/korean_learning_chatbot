@@ -1,12 +1,11 @@
 # LLM Agent Module
 
-This module provides the core natural language processing capabilities for the Korean Learning Bot, implementing different LLM-powered agents that handle various user interactions.
+This module provides the core NLP capabilities for the Korean Learning Bot, implementing different LLM-powered agents, using PydanticAI that handle various user interactions.
 
 ## Core Features
 
 - Router agent for intent classification and message routing
 - Translation agent for Korean-Russian translation 
-- Grammar agent for explaining Korean grammar concepts (planned)
 - Document retrieval from vector database
 - Hybrid search combining dense and sparse embeddings
 - Cross-encoder reranking for improved result relevance
@@ -16,9 +15,12 @@ This module provides the core natural language processing capabilities for the K
 The module consists of the following key components:
 
 1. **agent.py**: Implements the main agent functionality
-   - RouterAgent for classifying user intent and routing to specialized agents
+   - RouterAgent for 
+     - Classifying user intent and routing to specialized agents
+     - Direct answering
+     - Grammar retrieval using tools
+     - Grammar output or explanation based on user intent
    - TranslationAgent for handling language translation requests
-   - (Planned) GrammarAgent for explaining Korean grammar points
 
 2. **agent_tools.py**: Provides specialized tools for the agents
    - retrieve_documents: Searches for relevant grammar documents

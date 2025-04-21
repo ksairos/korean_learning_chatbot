@@ -4,6 +4,7 @@ from src.schemas.schemas import GrammarEntry
 
 
 def grammar_entry_to_markdown(entry: GrammarEntry):
+    # TODO Добавить использование с нерегулярными глаголами
 
     lines = []
     # Emphasize all Korean words
