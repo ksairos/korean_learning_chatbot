@@ -10,4 +10,4 @@ admin_router.message.filter(AdminFilter())
 
 @admin_router.message(CommandStart())
 async def admin_start(message: Message):
-    await message.reply("Hello, Admin!")
+    await message.reply("Привет!")

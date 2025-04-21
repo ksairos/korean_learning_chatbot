@@ -10,5 +10,5 @@ user_router = Router()
 @user_router.message(CommandStart())
 async def user_start(message: Message):
     """Handle the /start command"""
-    await message.reply("Welcome to the Korean Learning Bot! Use the menu to navigate.", 
+    await message.reply("Приветствую! Я - виртуальный ассистент по изучению корейского",
                         reply_markup=get_main_menu_keyboard())

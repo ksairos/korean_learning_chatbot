@@ -1,57 +1,22 @@
-# API Server Module
+# API Module
 
-This module implements a FastAPI server for webhook handling and API endpoints.
+The API module provides a FastAPI application that serves as the communication layer between the Telegram bot and the LLM agents. It exposes endpoints that process user messages and return appropriate responses.
 
-## Overview
+## Core Features
 
-The API server provides HTTP endpoints for Telegram webhooks and additional functionality for external systems. It shares the same configuration as the main bot.
+- FastAPI server with `/invoke` endpoint for processing user requests
+- Integration with OpenAI for text embeddings and LLM-powered responses
+- Connects to Qdrant for vector search of Korean grammar concepts
+- Uses cross-encoder for result re-ranking to improve relevance
+- Manages message history through database sessions
+- Implements hybrid search combining dense and sparse embeddings
 
-## Key Components
+## Implementation Details
 
-- **app.py**: Defines the FastAPI application with:
-  - Webhook endpoint for receiving updates
-  - Integration with the bot instance
-  - Logging configuration
-  
-- **requirements.txt**: Lists dependencies specific to the API server
+The main FastAPI application handles:
+- Processing incoming messages from the Telegram bot
+- Routing requests to appropriate LLM agents based on message content
+- Returning formatted responses ready for Telegram display
+- Managing conversation context and message history
 
-## Usage
-
-### Running the API Server
-
-With Docker Compose:
-```bash
-docker-compose up api
-```
-
-Standalone:
-```bash
-cd infrastructure/api
-uvicorn app:app --host 0.0.0.0 --port 8000
-```
-
-### Setting Up Telegram Webhooks
-
-1. Configure your Telegram Bot to use webhooks:
-```
-https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://yourdomain.com/webhook
-```
-
-2. Ensure the API server is accessible at the configured URL
-
-### Adding New Endpoints
-
-Add new endpoints in app.py:
-
-```python
-@app.get("/api/resource")
-async def get_resource():
-    # Implementation
-    return {"status": "success", "data": {...}}
-```
-
-## Security Considerations
-
-- The API server should be placed behind a reverse proxy (e.g., Nginx)
-- API endpoints should implement proper authentication
-- Webhook endpoints should validate Telegram's signature when possible
+The API acts as the central hub for the application's AI capabilities, connecting the user interface (Telegram bot) with the backend LLM processing and vector database.
