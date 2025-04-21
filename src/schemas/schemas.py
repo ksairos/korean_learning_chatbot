@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Optional, List, Dict
+from typing import Dict, List, Literal, Optional
 
 from fastembed import SparseTextEmbedding
 from openai import AsyncOpenAI
@@ -29,7 +29,7 @@ class RouterAgentResult(BaseModel):
         "direct_grammar_answer",
         "thinking_grammar_answer",
         "translation",
-        "direct_answer"
+        "direct_answer",
     ] = "direct_answer"
 
 
@@ -50,3 +50,23 @@ class RetrievedDoc(BaseModel):
     score: float
     cross_score: Optional[float] = None
 
+
+class TelegramUser(BaseModel):
+    """
+    Schema for Telegram user data for TelegramMessage
+    """
+
+    user_id: int
+    username: str
+    first_name: str
+    last_name: Optional[str]
+    chat_id: int
+
+
+class TelegramMessage(BaseModel):
+    """
+    Schema for telegram message sent from Telegram to API
+    """
+
+    user_prompt: str
+    user: TelegramUser

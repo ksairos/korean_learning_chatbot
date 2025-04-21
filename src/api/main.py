@@ -1,21 +1,22 @@
+import json
 import logfire
 
 from aiogram import Bot
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.params import Depends
 from fastembed import SparseTextEmbedding
 from sentence_transformers import CrossEncoder
 from openai import AsyncOpenAI
-from pydantic import BaseModel
 from pydantic_ai.usage import UsageLimits
-from qdrant_client import AsyncQdrantClient, QdrantClient
+from pydantic_ai.agent import AgentRunResult
+from qdrant_client import QdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import Config
+from src.db.crud import get_message_history, update_message_history
 from src.db.database import get_db
-from src.db.models import ChatModel
 from src.llm_agent.agent import router_agent
-from src.schemas.schemas import RouterAgentDeps, RouterAgentResult
+from src.schemas.schemas import RouterAgentDeps, RouterAgentResult, TelegramMessage
 
 app = FastAPI()
 
@@ -30,54 +31,60 @@ qdrant_client = QdrantClient(
 )
 
 # Set up in compose using model_cache volume
-sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub")
-reranking_model = CrossEncoder(config.reranking_model, cache_folder="/root/.cache/huggingface/hub")
+sparse_embedding = SparseTextEmbedding(
+    model_name=config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub"
+)
+reranking_model = CrossEncoder(
+    config.reranking_model, cache_folder="/root/.cache/huggingface/hub"
+)
 
 
 logfire.configure(token=config.logfire_api_key)
 logfire.instrument_openai(openai_client)
 logfire.instrument_fastapi(app)
 
-class Message(BaseModel):
-    user_prompt: str
-    chat_id: int
 
 @app.get("/")
 async def root():
-    return {"message" : "API"}
+    return {"message": "API"}
 
 
 @app.post("/invoke")
-async def process_message(message: Message, session: AsyncSession = Depends(get_db)):
-
+async def process_message(
+    message: TelegramMessage,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db),
+):
     logfire.info(f'User message "{message}"')
-    
+
     deps = RouterAgentDeps(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
         reranking_model=reranking_model,
-        session=session
+        session=session,
     )
 
-    r = await session.get(ChatModel, message.chat_id)
-    message_history = r.message_history
+    # Retrieve message history if present
+    message_history = await get_message_history(session, message.user)
 
-    response = await router_agent.run(
+    logfire.info(f'Message history "{message_history}"')
+
+    response: AgentRunResult = await router_agent.run(
         user_prompt=message.user_prompt,
         deps=deps,
         usage_limits=UsageLimits(request_limit=5),
-        result_type=RouterAgentResult,
+        output_type=RouterAgentResult,
         message_history=message_history,
     )
 
-    logfire.info(f"All messages: {response.all_messages_json()}")
-
+    # Update chat history with new messages
     new_messages = response.new_messages_json()
+    background_tasks.add_task(
+        update_message_history, session, message.user.chat_id, new_messages
+    )
 
-    # response = await grammar_agent.run(message.user_prompt, deps=deps)
-    logfire.info("Response: {response}", response=response.data)
-    return {
-        "llm_response" : response.data.llm_response,
-        "mode" : response.data.mode
-    }
+    logfire.info(f"New Messages: {json.loads(new_messages.decode("utf-8"))}")
+
+    logfire.info("Response: {response}", response=response.output)
+    return {"llm_response": response.output.llm_response, "mode": response.output.mode}

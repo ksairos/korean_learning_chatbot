@@ -51,7 +51,7 @@ services:
       - "6333"
       - "6334"
     volumes:
-      - qdrant_storage:/qdrant/storage
+      - ./src/qdrant_db/qdrant_data:/qdrant/storage
     networks:
       - app-network
 
@@ -62,6 +62,8 @@ services:
       - .env
     ports:
       - "5433:5432"
+    expose:
+      - "5433"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:

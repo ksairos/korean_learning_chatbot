@@ -21,10 +21,8 @@ logfire.configure(token=config.logfire_api_key)
 router_agent = Agent(
     model="openai:gpt-4o-mini",
     instrument=True,
-    result_type=RouterAgentResult,
-    system_prompt=(
-        prompts.router_prompt_v2
-    )
+    output_type=RouterAgentResult,
+    instructions=prompts.router_prompt_v2
 )
 
 # @router_agent.tool
@@ -47,7 +45,12 @@ async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str)
         context: the call context
         search_query: запрос для поиска
     """
-    return await retrieve_docs_tool(context, search_query, 5)
+    docs = await retrieve_docs_tool(context, search_query, 5)
+    if docs:
+        logfire.info(f"Retrieved docs: {docs}")
+        return docs
+    return "Нет подходящих грамматик"
+        
 
 @router_agent.tool
 async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_query: str):
@@ -58,10 +61,13 @@ async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_q
             search_query: запрос для поиска
         """
     docs = await retrieve_docs_tool(context, search_query, 1)
-    logfire.info(f"Retrieved docs: {docs}")
-    doc = docs[0].content
-
-    return grammar_entry_to_markdown(doc)
+    if docs:
+        doc = docs[0]
+        logfire.info(f"Retrieved doc: {doc}")
+        
+        return grammar_entry_to_markdown(doc.content)
+    
+    return "Нет подходящих грамматик"
 
 
 
@@ -73,14 +79,14 @@ async def translation_agent_call(user_prompt: str):
     Args:
         user_prompt: запрос для перевода
     """
-    r = await translation_agent.run(user_prompt, result_type=TranslationAgentResult)
-    return r.data.translation
+    r = await translation_agent.run(user_prompt, output_type=TranslationAgentResult)
+    return r.output.translation
 
 
 translation_agent = Agent(
     "openai:gpt-4.5-preview",
     instrument=True,
-    result_type=TranslationAgentResult,
+    output_type=TranslationAgentResult,
     system_prompt=(
         """
         Вы — профессиональный многоязычный переводчик и языковой эксперт. Переведите данное сообщение пользователя, 

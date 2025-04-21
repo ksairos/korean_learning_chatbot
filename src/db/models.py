@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
+from uuid import uuid4, UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from sqlalchemy import DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -54,7 +56,7 @@ class ChatModel(Base):
 class MessageBlobModel(Base):
     __tablename__ = "message_blobs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
     chat_id: Mapped[int] = mapped_column(
         ForeignKey("chats.id", ondelete="CASCADE"), nullable=False
     )

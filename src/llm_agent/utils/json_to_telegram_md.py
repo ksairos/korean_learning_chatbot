@@ -1,12 +1,9 @@
-import chatgpt_md_converter
 import re
 
 from src.schemas.schemas import GrammarEntry
 
 
 def grammar_entry_to_markdown(entry: GrammarEntry):
-
-
 
     lines = []
     # Emphasize all Korean words

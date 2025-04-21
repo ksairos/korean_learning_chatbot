@@ -164,6 +164,7 @@ if __name__ == "__main__":
         print(f"{len(entries)} grammar entries to upload")
     else:
         print("Please run parse_md_to_json.py first to generate JSON files.")
+        exit()
 
     # Generate embeddings and create points
 
@@ -193,4 +194,4 @@ if __name__ == "__main__":
     )
 
     print(f"Upload complete. {len(points)} entries added to {config.qdrant_collection_name} collection.")
-    print(f"You can now query the collection using the Qdrant client.")
+    print("You can now query the collection using the Qdrant client.")
