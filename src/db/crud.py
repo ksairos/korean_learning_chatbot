@@ -1,4 +1,5 @@
 import logfire
+from sqlalchemy import desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
@@ -40,12 +41,13 @@ async def add_user(session: AsyncSession, user: TelegramUser) -> None:
             raise e
 
 
-async def get_message_history(session: AsyncSession, user: TelegramUser) -> list[ModelMessage]:
+async def get_message_history(session: AsyncSession, user: TelegramUser, limit: int) -> list[ModelMessage]:
     """
     Get message history by using chat ID
     Args:
         session: Database session
         user: Telegram user class
+        limit: Number of last turns to return
     """
     chat = await session.get(ChatModel, user.chat_id)
     chat_history: list[ModelMessage] = []
@@ -55,7 +57,16 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
         await add_user(session, user)
         return chat_history
 
-    for turn in chat.messages:
+    recent = (
+        await session.execute(
+            chat.messages.
+            order_by(desc(MessageBlobModel.created_at))
+            .limit(limit)
+        )
+    ).scalars().all()
+
+    for turn in reversed(recent):
+        print(turn.created_at)
         chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
 
     return chat_history

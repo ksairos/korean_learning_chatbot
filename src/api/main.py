@@ -66,9 +66,9 @@ async def process_message(
     )
 
     # Retrieve message history if present
-    message_history = await get_message_history(session, message.user)
+    message_history = await get_message_history(session, message.user, 5)
 
-    logfire.info(f'Message history "{message_history}"')
+    logfire.info(f'Message history length: "{len(message_history)}"')
 
     response: AgentRunResult = await router_agent.run(
         user_prompt=message.user_prompt,

@@ -42,9 +42,9 @@ class ChatModel(Base):
 
     # Relationship to raw message blobs
     messages: Mapped[list["MessageBlobModel"]] = relationship(
-        "MessageBlobModel", 
+        "MessageBlobModel",
         back_populates="chat", 
-        lazy="selectin"
+        lazy="dynamic"
     )
     user: Mapped["UserModel"] = relationship(
         "UserModel",

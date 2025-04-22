@@ -79,6 +79,19 @@ class Config(BaseSettings):
             port=self.postgres_port_ext,
             path=self.postgres_db,
         )
+
+    @computed_field
+    @property
+    def sync_pg_url(self) -> Any:
+        """Synchronous database URL for scripts and testing."""
+        return MultiHostUrl.build(
+            scheme="postgresql+psycopg",
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host_ext,
+            port=self.postgres_port_ext,
+            path=self.postgres_db,
+        )
     
     # db: DbConfig = DbConfig()
     # redis: Optional[RedisConfig] = RedisConfig()
