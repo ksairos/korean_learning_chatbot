@@ -22,7 +22,7 @@ router_agent = Agent(
     model="openai:gpt-4o-mini",
     instrument=True,
     output_type=RouterAgentResult,
-    instructions=prompts.router_prompt_v2
+    instructions=prompts.router_prompt_v2_en
 )
 
 
@@ -30,6 +30,7 @@ router_agent = Agent(
 async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str):
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
+    A tool for extracting grammatical constructions based on the user's query.
     Args:
         context: the call context
         search_query: запрос для поиска
@@ -45,6 +46,7 @@ async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str)
 async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_query: str):
     """
         Инструмент для извлечения ОДНОЙ грамматической конструкции на основе запроса пользователя.
+        A tool for extracting a SINGLE grammatical construction based on the user's query.
         Args:
             context: the call context
             search_query: запрос для поиска
@@ -63,8 +65,8 @@ async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_q
 @router_agent.tool_plain
 async def translation_agent_call(user_prompt: str):
     """
-    Инструмент для перевода текста с русского на корейский и наоборот
-
+    Инструмент для перевода текста с русского на корейский и наоборот.
+    A tool for translating text from Russian to Korean and vice versa.
     Args:
         user_prompt: запрос для перевода
     """
@@ -76,12 +78,5 @@ translation_agent = Agent(
     "openai:gpt-4.5-preview",
     instrument=True,
     output_type=TranslationAgentResult,
-    system_prompt=(
-        """
-        Вы — профессиональный многоязычный переводчик и языковой эксперт. Переведите данное сообщение пользователя, 
-        точно передавая контекст, грамматику и тон. Если сообщение на русском языке, переведите его на корейский, 
-        и наоборот. Не используйте другие языки, даже если об этом попросят. Тщательно проверяйте используемую лексику 
-        и грамматику: грамматические конструкции должны быть точными, а лексика — звучать естественно.
-        """
-    )
+    instructions=prompts.translator_prompt_en
 )

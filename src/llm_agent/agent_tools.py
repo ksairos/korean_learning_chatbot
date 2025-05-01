@@ -18,7 +18,9 @@ logfire.configure(token=config.logfire_api_key)
 async def retrieve_docs_tool(
     context: RunContext[RouterAgentDeps], search_query: str, top_k: int = 5
 ) -> list[RetrievedDoc] | None:
-    """Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
+    """
+    Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
+    A tool for extracting grammatical constructions based on the user's query.
 
     Args:
         context: the call context
