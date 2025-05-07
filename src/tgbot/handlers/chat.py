@@ -47,6 +47,7 @@ async def invoke(message: types.Message, state: FSMContext):
                     logging.error(
                         f"API error: {response.status}, {await response.text()}"
                     )
-                    await message.answer("Something went wrong, please try again.")
+                    await message.answer("Произошла ошибка, сообщите в поддержку или попробуйте снова позже")
+                    await message.answer("Something went wrong. Report to the support or try again later.")
     except Exception as e:
         logging.error(f"Error processing message via API: {e}")

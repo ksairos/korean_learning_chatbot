@@ -1,8 +1,7 @@
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
-
-from src.tgbot.keyboards.inline import get_main_menu_keyboard
+from chatgpt_md_converter import telegram_format
 
 user_router = Router()
 
@@ -10,5 +9,11 @@ user_router = Router()
 @user_router.message(CommandStart())
 async def user_start(message: Message):
     """Handle the /start command"""
-    await message.reply("Приветствую! Я - виртуальный ассистент по изучению корейского",
-                        reply_markup=get_main_menu_keyboard())
+    await message.reply(
+        telegram_format(
+            "Приветствую! Я - LazyHangeul, твой помощник в изучении корейской грамматики.\n"
+            "Какую грамматику тебе объяснить?\n\n"
+            "Hello! I'm LazyHangeul, your Korean grammar learning assistant\n"
+            "Which grammar would you like to learn today?"
+        )
+    )
