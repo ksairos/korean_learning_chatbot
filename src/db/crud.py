@@ -1,5 +1,5 @@
 import logfire
-from sqlalchemy import desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
@@ -102,3 +102,9 @@ async def update_message_history(
     except Exception as e:
         await session.rollback()
         logfire.error(f"An unexpected error occurred adding message to chat {chat_id}: {e}")
+
+
+async def get_user_ids(session: AsyncSession):
+    users = await session.scalars(select(UserModel))
+    ids = [row.id for row in users.all()]
+    return ids

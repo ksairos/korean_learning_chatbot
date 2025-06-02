@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import types, Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -7,6 +9,7 @@ import aiohttp
 import logging
 
 from src.schemas.schemas import TelegramMessage, TelegramUser
+from src.tgbot.misc.utils import animate_thinking
 
 chat_router = Router()
 
@@ -19,6 +22,8 @@ async def invoke(message: types.Message, state: FSMContext):
         return
 
     try:
+        thinking_message = await message.answer("•")
+        animation_task = asyncio.create_task(animate_thinking(thinking_message))
         async with aiohttp.ClientSession() as session:
             user = TelegramUser(
                 user_id=message.from_user.id,
@@ -34,20 +39,30 @@ async def invoke(message: types.Message, state: FSMContext):
             async with session.post(
                 API_URL, json=telegram_message.model_dump()
             ) as response:
+                await thinking_message.delete()
+                animation_task.cancel()
                 if response.status == 200:
                     data = await response.json()
                     llm_response = data["llm_response"]
                     # mode = data["mode"]
 
                     formatted_response = telegram_format(llm_response)
-
                     await message.answer(formatted_response)
+
+                elif response.status == 403:
+                    await message.answer("Unauthorized user")
 
                 else:
                     logging.error(
                         f"API error: {response.status}, {await response.text()}"
                     )
-                    await message.answer("Произошла ошибка, сообщите в поддержку или попробуйте снова позже")
-                    await message.answer("Something went wrong. Report to the support or try again later.")
+                    await message.answer(
+                        "Произошла ошибка, сообщите в поддержку или попробуйте снова позже\n\n"
+                        "Something went wrong. Report to the support or try again later.")
     except Exception as e:
         logging.error(f"Error processing message via API: {e}")
+        try:
+            animation_task.cancel()
+            await thinking_message.delete()
+        except:
+            pass

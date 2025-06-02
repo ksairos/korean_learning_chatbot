@@ -57,7 +57,7 @@ class TelegramUser(BaseModel):
     """
 
     user_id: int
-    username: str
+    username: Optional[str]
     first_name: str
     last_name: Optional[str]
     chat_id: int

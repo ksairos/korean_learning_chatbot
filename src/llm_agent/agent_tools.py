@@ -16,7 +16,7 @@ logfire.configure(token=config.logfire_api_key)
 
 
 async def retrieve_docs_tool(
-    context: RunContext[RouterAgentDeps], search_query: str, top_k: int = 5
+    context: RunContext[RouterAgentDeps], search_query: str, retrieve_top_k: int = 10, rerank_top_k: int = 4
 ) -> list[RetrievedDoc] | None:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
@@ -25,7 +25,8 @@ async def retrieve_docs_tool(
     Args:
         context: the call context
         search_query: запрос для поиска
-        top_k: количество результатов ПОСЛЕ reranking-а
+        retrieve_top_k: количество RETRIEVED результатов
+        rerank_top_k: количество результатов ПОСЛЕ reranking-а
     """
     with logfire.span(f"Creating embedding for search_query = {search_query}"):
         vector_query = await context.deps.openai_client.embeddings.create(
@@ -48,7 +49,7 @@ async def retrieve_docs_tool(
         Prefetch(
             query=sparse_vector_query,
             using=config.sparse_embedding_model,
-            limit=10,
+            limit=retrieve_top_k,
             score_threshold=threshold,
         )
     ]
@@ -60,7 +61,7 @@ async def retrieve_docs_tool(
         collection_name=config.qdrant_collection_name,
         using=config.embedding_model,
         query=vector_query,
-        limit=top_k,
+        limit=retrieve_top_k,
         prefetch=bm_25_prefetch,
         score_threshold=threshold,
         with_payload=True,
@@ -82,7 +83,8 @@ async def retrieve_docs_tool(
         logfire.info("No documents found.")
         return None
 
-    else:
+    # Only rerank if the number of retrieved docs > docs to rerank
+    elif len(docs) > rerank_top_k:
         # TODO cross encoder works with the description only now. Test other variations
         cross_input = [[search_query, doc.content.description] for doc in docs]
         logfire.info(f"Cross input: {cross_input}")
@@ -96,16 +98,14 @@ async def retrieve_docs_tool(
             )
 
         # Sort by cross-encoder score
-        sorted_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
+        reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
         # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
         #     f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
         # )
 
-        logfire.info(f"Formatted docks: {sorted_docs}")
+        logfire.info(f"Sorted docs: {reranked_docs}")
+        return reranked_docs[:rerank_top_k]
 
-        return sorted_docs
-
-
-# async def rewrite_docs_tool(context: RunContext[RouterAgentDeps], search_query: str):
-#     pass
+    else:
+        return docs

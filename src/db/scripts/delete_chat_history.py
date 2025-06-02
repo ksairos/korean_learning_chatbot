@@ -3,7 +3,6 @@
 Script to delete all message history for a specific chat ID.
 """
 
-import argparse
 from contextlib import contextmanager
 from sqlalchemy import delete
 

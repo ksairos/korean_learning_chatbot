@@ -15,14 +15,23 @@ from src.schemas.schemas import RouterAgentDeps, TranslationAgentResult, RouterA
 load_dotenv()
 
 config = Config()
-
 logfire.configure(token=config.logfire_api_key)
+
+#INFO Modify to change the bot language
+language = "ru"
+if language == "ru":
+    router_prompt = prompts.router_prompt_v2_ru
+    translator_prompt = prompts.translator_prompt_ru
+else:
+    router_prompt = prompts.router_prompt_v2_en
+    translator_prompt = prompts.translator_prompt_en
+
 
 router_agent = Agent(
     model="openai:gpt-4o-mini",
     instrument=True,
     output_type=RouterAgentResult,
-    instructions=prompts.router_prompt_v2_en
+    instructions=router_prompt
 )
 
 
@@ -37,28 +46,40 @@ async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str)
     """
     docs = await retrieve_docs_tool(context, search_query, 5)
     if docs:
-        logfire.info(f"Retrieved docs: {docs}")
-        return docs
+        formatted_docs = [grammar_entry_to_markdown(doc.content) for doc in docs]
+        logfire.info(f"Retrieved docs: {formatted_docs}")
+        return formatted_docs
     return "Нет подходящих грамматик"
-        
 
 @router_agent.tool
-async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_query: str):
+async def retrieve_single_doc(context: RunContext[RouterAgentDeps], search_query: str):
     """
-        Инструмент для извлечения ОДНОЙ грамматической конструкции на основе запроса пользователя.
-        A tool for extracting a SINGLE grammatical construction based on the user's query.
-        Args:
-            context: the call context
-            search_query: запрос для поиска
-        """
-    docs = await retrieve_docs_tool(context, search_query, 1)
-    if docs:
-        doc = docs[0]
-        logfire.info(f"Retrieved doc: {doc}")
+    Инструмент для поиска грамматической конструкций на основе запроса пользователя.
+    A tool for extracting grammatical constructions based on the user's query.
+    Args:
+        context: the call context
+        search_query: запрос для поиска
+    """
+    pass
 
-        return grammar_entry_to_markdown(doc.content)
+
+# @router_agent.tool
+# async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_query: str):
+#     """
+#         Инструмент для извлечения ОДНОЙ грамматической конструкции на основе запроса пользователя.
+#         A tool for extracting a SINGLE grammatical construction based on the user's query.
+#         Args:
+#             context: the call context
+#             search_query: запрос для поиска
+#         """
+#     docs = await retrieve_docs_tool(context, search_query, 1)
+#     if docs:
+#         doc = docs[0]
+#         logfire.info(f"Retrieved doc: {doc}")
+
+#         return grammar_entry_to_markdown(doc.content)
     
-    return "Нет подходящих грамматик"
+#     return "Нет подходящих грамматик"
 
 
 
@@ -78,5 +99,5 @@ translation_agent = Agent(
     "openai:gpt-4.5-preview",
     instrument=True,
     output_type=TranslationAgentResult,
-    instructions=prompts.translator_prompt_en
+    instructions=translator_prompt
 )

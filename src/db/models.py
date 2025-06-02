@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import uuid4, UUID
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-from sqlalchemy import DateTime, ForeignKey, LargeBinary
+from sqlalchemy import DateTime, ForeignKey, LargeBinary, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
@@ -12,8 +12,8 @@ from src.db.database import Base
 class UserModel(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True, nullable=True)
     first_name: Mapped[str]
     last_name: Mapped[Optional[str]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -33,7 +33,7 @@ class UserModel(Base):
 class ChatModel(Base):
     __tablename__ = "chats"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

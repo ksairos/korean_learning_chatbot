@@ -2,7 +2,7 @@ import json
 import logfire
 
 from aiogram import Bot
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.params import Depends
 from fastembed import SparseTextEmbedding
 from sentence_transformers import CrossEncoder
@@ -13,7 +13,7 @@ from qdrant_client import QdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import Config
-from src.db.crud import get_message_history, update_message_history
+from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
 from src.llm_agent.agent import router_agent
 from src.schemas.schemas import RouterAgentDeps, RouterAgentResult, TelegramMessage
@@ -56,6 +56,11 @@ async def process_message(
     session: AsyncSession = Depends(get_db),
 ):
     logfire.info(f'User message "{message}"')
+
+    allowed_users = await get_user_ids(session)
+    if not message.user.user_id in allowed_users:
+        raise HTTPException(status_code=403,
+                            detail="User not registered")
 
     deps = RouterAgentDeps(
         openai_client=openai_client,
