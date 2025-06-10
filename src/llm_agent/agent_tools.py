@@ -43,27 +43,28 @@ async def retrieve_docs_tool(
 
     vector_query = vector_query.data[0].embedding
 
-    threshold = 0
+    bm_threshold = 0
+    vector_threshold = 0
 
     bm_25_prefetch = [
         Prefetch(
             query=sparse_vector_query,
             using=config.sparse_embedding_model,
             limit=retrieve_top_k,
-            score_threshold=threshold,
+            score_threshold=bm_threshold,
         )
     ]
 
-    logfire.info("Prefetch configured for sparse vector")
+    # logfire.info("Prefetch configured for sparse vector")
 
-    logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
+    # logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
     hits = context.deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name,
         using=config.embedding_model,
         query=vector_query,
         limit=retrieve_top_k,
         prefetch=bm_25_prefetch,
-        score_threshold=threshold,
+        score_threshold=vector_threshold,
         with_payload=True,
     ).points
 
@@ -83,29 +84,27 @@ async def retrieve_docs_tool(
         logfire.info("No documents found.")
         return None
 
-    # Only rerank if the number of retrieved docs > docs to rerank
-    elif len(docs) > rerank_top_k:
-        # TODO cross encoder works with the description only now. Test other variations
-        cross_input = [[search_query, doc.content.description] for doc in docs]
-        logfire.info(f"Cross input: {cross_input}")
-        scores = context.deps.reranking_model.predict(cross_input)
+    #TODO Try only reranking if the number of retrieved docs > docs to rerank
+    cross_input = []
+    for doc in docs:
+        doc_data = " ".join([doc.content.grammar_name_kr, doc.content.grammar_name_rus])
+        cross_input.append([search_query, doc_data])
+    logfire.info(f"Cross input: {cross_input}")
+    scores = context.deps.reranking_model.predict(cross_input)
 
-        # Add cross-encoder scores to docs
-        for idx in range(len(scores)):
-            docs[idx].cross_score = float(scores[idx])
-            logfire.info(
-                f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}"
-            )
+    # Add cross-encoder scores to docs
+    for idx in range(len(scores)):
+        docs[idx].cross_score = float(scores[idx])
+        logfire.info(
+            f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}"
+        )
 
-        # Sort by cross-encoder score
-        reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
+    # Sort by cross-encoder score
+    reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
-        # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
-        #     f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
-        # )
+    # formatted_docs = "Подходящие грамматики:\n\n" + '\n\n'.join(
+    #     f"{doc.content.model_dump_json(indent=2)}" for doc in sorted_docs
+    # )
 
-        logfire.info(f"Sorted docs: {reranked_docs}")
-        return reranked_docs[:rerank_top_k]
-
-    else:
-        return docs
+    logfire.info(f"Sorted docs: {reranked_docs}")
+    return reranked_docs[:rerank_top_k]

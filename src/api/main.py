@@ -30,6 +30,14 @@ qdrant_client = QdrantClient(
     port=config.qdrant_port,
 )
 
+# NOTE: Can be used with the remote cluster
+
+# qdrant_client = QdrantClient(
+#     url=config.qdrant_host_cluster,
+#     port=config.qdrant_port,
+#     api_key=config.qdrant_api_key,
+# )
+
 # Set up in compose using model_cache volume
 sparse_embedding = SparseTextEmbedding(
     model_name=config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub"
@@ -58,7 +66,7 @@ async def process_message(
     logfire.info(f'User message "{message}"')
 
     allowed_users = await get_user_ids(session)
-    if not message.user.user_id in allowed_users:
+    if message.user.user_id not in allowed_users:
         raise HTTPException(status_code=403,
                             detail="User not registered")
 
@@ -72,8 +80,6 @@ async def process_message(
 
     # Retrieve message history if present
     message_history = await get_message_history(session, message.user, 5)
-
-    logfire.info(f'Message history length: "{len(message_history)}"')
 
     response: AgentRunResult = await router_agent.run(
         user_prompt=message.user_prompt,

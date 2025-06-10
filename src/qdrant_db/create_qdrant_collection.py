@@ -50,58 +50,60 @@ def get_embedding(text: str) -> List[float]:
         return [0] * 1536  # Return zero vector on error
 
 
+# def reformat_for_embedding(entry: dict) -> str:
+    # """
+    # Reformat a single JSON entry into a single string for embedding.
+    # """
+    # parts = []
+
+    # # Include grammar names if available
+    # if "grammar_name_kr" in entry:
+    #     parts.append(f"НАЗВАНИЕ НА КОРЕЙСКОМ: {entry['grammar_name_kr']}")
+    # if "grammar_name_rus" in entry:
+    #     parts.append(f"НАЗВАНИЕ НА РУССКОМ: {entry['grammar_name_rus']}")
+
+    # # Include level information (optional)
+    # level_mapping = {
+    #     1: "Начинающий",
+    #     2: "Базовый",
+    #     3: "Средний",
+    #     4: "Выше среднего",
+    #     5: "Продвинутый",
+    #     6: "Экспертный"
+    # }
+
+    # if "level" in entry:
+    #     level_value = entry.get("level")
+    #     level_name = level_mapping.get(level_value, f"Level {level_value}")
+    #     parts.append(f"Level: {level_name} ({level_value})")
+
+    # # Append description
+    # if "description" in entry and entry["description"]:
+    #     parts.append(f"ОПИСАНИЕ: {entry['description']}")
+
+    # # Append usage form
+    # if "usage_form" in entry and entry["usage_form"]:
+    #     parts.append(f"ФОРМА: {entry['usage_form']}")
+
+    # # Append examples
+    # if "examples" in entry and entry["examples"]:
+    #     for idx, example in enumerate(entry["examples"], start=1):
+    #         korean = example.get("korean", "")
+    #         russian = example.get("russian", "")
+    #         parts.append(f"ПРИМЕР {idx}: НА КОРЕЙСКОМ: {korean} | НА РУССКОМ: {russian}")
+
+    # # Append notes
+    # if "notes" in entry and entry["notes"]:
+    #     # Join notes with a semicolon for clarity
+    #     notes_combined = "; ".join(entry["notes"])
+    #     parts.append(f"ПРИМЕЧАНИЯ: {notes_combined}")
+
+    # # TODO: Add irregular verbs examples
+    # # Combine all parts into one final string separated by newlines
+    # return "\n".join(parts)
+
 def reformat_for_embedding(entry: dict) -> str:
-    """
-    Reformat a single JSON entry into a single string for embedding.
-    """
-    parts = []
-
-    # Include grammar names if available
-    if "grammar_name_kr" in entry:
-        parts.append(f"НАЗВАНИЕ НА КОРЕЙСКОМ: {entry['grammar_name_kr']}")
-    if "grammar_name_rus" in entry:
-        parts.append(f"НАЗВАНИЕ НА РУССКОМ: {entry['grammar_name_rus']}")
-
-    # Include level information (optional)
-    level_mapping = {
-        1: "Начинающий",
-        2: "Базовый",
-        3: "Средний",
-        4: "Выше среднего",
-        5: "Продвинутый",
-        6: "Экспертный"
-    }
-
-    if "level" in entry:
-        level_value = entry.get("level")
-        level_name = level_mapping.get(level_value, f"Level {level_value}")
-        parts.append(f"Level: {level_name} ({level_value})")
-
-    # Append description
-    if "description" in entry and entry["description"]:
-        parts.append(f"ОПИСАНИЕ: {entry['description']}")
-
-    # Append usage form
-    if "usage_form" in entry and entry["usage_form"]:
-        parts.append(f"ФОРМА: {entry['usage_form']}")
-
-    # Append examples
-    if "examples" in entry and entry["examples"]:
-        for idx, example in enumerate(entry["examples"], start=1):
-            korean = example.get("korean", "")
-            russian = example.get("russian", "")
-            parts.append(f"ПРИМЕР {idx}: НА КОРЕЙСКОМ: {korean} | НА РУССКОМ: {russian}")
-
-    # Append notes
-    if "notes" in entry and entry["notes"]:
-        # Join notes with a semicolon for clarity
-        notes_combined = "; ".join(entry["notes"])
-        parts.append(f"ПРИМЕЧАНИЯ: {notes_combined}")
-
-    # TODO: Add irregular verbs examples
-    # Combine all parts into one final string separated by newlines
-    return "\n".join(parts)
-
+    return f"Грамматика {entry['grammar_name_kr']} - {entry['grammar_name_rus']}: {entry['description']}"
 
 
 def load_json_entries(dir_path: str) -> List[Dict[str, Any]]:
@@ -174,7 +176,7 @@ if __name__ == "__main__":
         formatted_entry = reformat_for_embedding(entry)
         vector = get_embedding(formatted_entry)
         sparse_vector = next(bm25_embedding_model.embed(formatted_entry)).as_object()
-
+        
         points.append(models.PointStruct(
             id=i,
             vector={

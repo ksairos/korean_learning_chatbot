@@ -33,7 +33,13 @@ class Config(BaseSettings):
     qdrant_collection_name: str = "korean_grammar"
     qdrant_host: str = "localhost"
     qdrant_host_docker: str = "qdrant"
+    qdrant_host_cluster: str = (
+        "https://8e483fe5-04a1-4fb5-a205-c62811d2f007.us-east-1-0.aws.cloud.qdrant.io"
+    )
     qdrant_port: int = 6333
+    qdrant_api_key: str | None = None
+
+
 
     bot_token: str | None = None
     admin_ids: list[int] | None = None

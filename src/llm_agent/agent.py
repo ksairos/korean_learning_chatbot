@@ -46,13 +46,13 @@ async def retrieve_docs(context: RunContext[RouterAgentDeps], search_query: str)
     """
     docs = await retrieve_docs_tool(context, search_query, 5)
     if docs:
-        formatted_docs = [grammar_entry_to_markdown(doc.content) for doc in docs]
-        logfire.info(f"Retrieved docs: {formatted_docs}")
-        return formatted_docs
+        # formatted_docs = [grammar_entry_to_markdown(doc.content) for doc in docs]
+        logfire.info(f"Retrieved docs: {docs}")
+        return docs
     return "Нет подходящих грамматик"
 
 @router_agent.tool
-async def retrieve_single_doc(context: RunContext[RouterAgentDeps], search_query: str):
+async def output_single_doc(context: RunContext[RouterAgentDeps], search_query: str):
     """
     Инструмент для поиска грамматической конструкций на основе запроса пользователя.
     A tool for extracting grammatical constructions based on the user's query.
