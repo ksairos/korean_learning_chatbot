@@ -9,30 +9,6 @@ from sentence_transformers import CrossEncoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-@dataclass
-class RouterAgentDeps:
-    openai_client: AsyncOpenAI
-    # TODO: Add async support using AsyncQdrantClient
-    qdrant_client: QdrantClient
-    sparse_embedding: SparseTextEmbedding
-    reranking_model: CrossEncoder
-    session: AsyncSession
-
-
-class TranslationAgentResult(BaseModel):
-    translation: str = ""
-
-
-class RouterAgentResult(BaseModel):
-    llm_response: str
-    mode: Literal[
-        "direct_grammar_answer",
-        "thinking_grammar_answer",
-        "translation",
-        "direct_answer",
-    ] = "direct_answer"
-
-
 class GrammarEntry(BaseModel):
     level: Literal[1, 2, 3, 4, 5, 6]
     grammar_name_kr: str
@@ -70,3 +46,31 @@ class TelegramMessage(BaseModel):
 
     user_prompt: str
     user: TelegramUser
+
+@dataclass
+class RouterAgentDeps:
+    openai_client: AsyncOpenAI
+    # TODO: Add async support using AsyncQdrantClient
+    qdrant_client: QdrantClient
+    sparse_embedding: SparseTextEmbedding
+    reranking_model: CrossEncoder
+    session: AsyncSession
+
+
+class TranslationAgentResult(BaseModel):
+    translation: str = ""
+
+
+class RouterAgentResult(BaseModel):
+    user_message: str
+    message_type: Literal[
+        "direct_grammar_search",
+        "thinking_grammar_answer",
+    ] = "direct_grammar_answer"
+
+class GrammarAgentResult(BaseModel):
+    llm_response: str
+    answer_type: str = "grammar"
+
+class GrammarSearchAgentResult(BaseModel):
+    found_grammars: list[RetrievedDoc | None]

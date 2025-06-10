@@ -34,8 +34,5 @@ def retrieve_message_history(chat_id: int):
                 item["instructions"] = "LLM Instructions"
             pprint(raw_data, expand_all=True)
 
-
-
-
 if __name__ == '__main__':
     retrieve_message_history(1234335061)

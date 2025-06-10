@@ -15,8 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent
-from src.schemas.schemas import RouterAgentDeps, RouterAgentResult, TelegramMessage
+from src.llm_agent.agent import router_agent, grammar_agent
+from src.schemas.schemas import (
+    RouterAgentDeps,
+    RouterAgentResult,
+    TelegramMessage,
+    GrammarAgentResult,
+)
 
 app = FastAPI()
 
@@ -30,8 +35,7 @@ qdrant_client = QdrantClient(
     port=config.qdrant_port,
 )
 
-# NOTE: Can be used with the remote cluster
-
+# INFO: Can be used with the remote cluster
 # qdrant_client = QdrantClient(
 #     url=config.qdrant_host_cluster,
 #     port=config.qdrant_port,
@@ -81,7 +85,7 @@ async def process_message(
     # Retrieve message history if present
     message_history = await get_message_history(session, message.user, 5)
 
-    response: AgentRunResult = await router_agent.run(
+    router_agent_response: AgentRunResult = await router_agent.run(
         user_prompt=message.user_prompt,
         deps=deps,
         usage_limits=UsageLimits(request_limit=5),
@@ -89,13 +93,26 @@ async def process_message(
         message_history=message_history,
     )
 
-    # Update chat history with new messages
-    new_messages = response.new_messages_json()
-    background_tasks.add_task(
-        update_message_history, session, message.user.chat_id, new_messages
+    router_answer = f"Сообщение: {message.user_prompt}, тип: {router_agent_response.output.message_type}"
+    logfire.info("Router agent response: {response}", response=router_answer)
+
+    grammar_agent_response = await grammar_agent.run(
+        user_prompt=router_answer,
+        deps=deps,
+        usage_limits=UsageLimits(request_limit=5),
+        output_type=GrammarAgentResult,
     )
+    logfire.info("Grammar agent response: {response}", response=grammar_agent_response.output.llm_response)
 
-    logfire.info(f"New Messages: {json.loads(new_messages.decode("utf-8"))}")
+    # todo и добавить другого агента
+    # grammar_agent_response: AgentRunResult = await grammar_agent.run()
 
-    logfire.info("Response: {response}", response=response.output)
-    return {"llm_response": response.output.llm_response, "mode": response.output.mode}
+    # Update chat history with new messages
+    new_messages = grammar_agent_response.new_messages()
+    # background_tasks.add_task(
+    #     update_message_history, session, message.user.chat_id, new_messages
+    # )
+
+    logfire.info(f"New Messages: {new_messages}")
+
+    return {"llm_response": grammar_agent_response.output.llm_response, "mode": grammar_agent_response.output.answer_type}
