@@ -12,7 +12,7 @@ from pydantic_ai import Agent, RunContext
 
 
 from src.llm_agent.agent_tools import retrieve_docs_tool
-from src.llm_agent.utils.json_to_telegram_md import grammar_entry_to_markdown
+from src.utils.json_to_telegram_md import grammar_entry_to_markdown
 from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,

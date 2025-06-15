@@ -1,6 +1,7 @@
 """
 The older version of the functions, that was using Multi-Stage Query search
 Might be useful for thinking_grammar_answer
+It was also using the v0-ai-generated data with JSON version of grammar entries
 """
 
 import logfire
