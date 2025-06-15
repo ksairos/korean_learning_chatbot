@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from fastembed import SparseTextEmbedding
 
 from src.config.settings import Config
+from src.qdrant_db.parse_md_to_json import parse_entry_v1
 
 load_dotenv()
 openai_client = OpenAI()
@@ -105,7 +106,7 @@ def get_embedding(text: str) -> List[float]:
 def reformat_for_embedding(entry: dict) -> str:
     return f"Грамматика {entry['grammar_name_kr']} - {entry['grammar_name_rus']}: {entry['description']}"
 
-
+#? INFO For JSON grammars
 def load_json_entries(dir_path: str) -> List[Dict[str, Any]]:
     """Load all JSON grammar entries from a directory."""
     entries = []
@@ -122,7 +123,15 @@ def load_json_entries(dir_path: str) -> List[Dict[str, Any]]:
 
     return entries
 
-def create_qdrant_collection(collection_name: str = config.qdrant_collection_name) -> None:
+
+#? INFO For MD grammars
+
+def load_md_entries(dir_path: Path) -> List[str]:
+    """Load all MD grammar entries from a directory"""
+    content_list = [file.read_text(encoding='utf-8') for file in dir_path.glob("*.md")]
+    return content_list
+
+def create_qdrant_collection(collection_name: str) -> None:
     """Create a Qdrant collection if it doesn't exist."""
     # List existing collections
     # Create a collection if it doesn't exist
@@ -154,46 +163,93 @@ def create_qdrant_collection(collection_name: str = config.qdrant_collection_nam
 
 
 if __name__ == "__main__":
-    # Create collection
-    create_qdrant_collection()
-
-    # Load grammar entries
-    data_dir = Path("data/grammar-level-1")
-    all_entries_file = data_dir / "entries.json"
-
-    if all_entries_file.exists():
-        entries = load_json_entries(str(all_entries_file))
-        print(f"{len(entries)} grammar entries to upload")
-    else:
-        print("Please run parse_md_to_json.py first to generate JSON files.")
-        exit()
-
-    # Generate embeddings and create points
-
-    points = []
-    for i, entry in enumerate(entries):
-
-        formatted_entry = reformat_for_embedding(entry)
-        vector = get_embedding(formatted_entry)
-        sparse_vector = next(bm25_embedding_model.embed(formatted_entry)).as_object()
+    #! Select Mode before using: md or json
+    MODE = "md"
+    LEVEL = 1
+    
+    #? Load grammar entries from JSON
+    if MODE == "json":
+        COLLECTION_NAME = config.qdrant_collection_name
+        create_qdrant_collection(COLLECTION_NAME)
         
-        points.append(models.PointStruct(
-            id=i,
-            vector={
-                config.embedding_model: vector,
-                config.sparse_embedding_model: sparse_vector
-            },
-            payload=entry
-        ))
+        all_entries_json_file = Path("data/grammar-level-1/entries.json")
+
+        if all_entries_json_file.exists():
+            entries = load_json_entries(str(all_entries_json_file))
+            print(f"{len(entries)} grammar entries to upload")
+        else:
+            print("Please run parse_md_to_json.py first to generate JSON files.")
+            exit()
+            
+        # Generate embeddings and create points
+        points = []
+        for i, entry in enumerate(entries):
+
+            formatted_entry = reformat_for_embedding(entry)
+            vector = get_embedding(formatted_entry)
+            sparse_vector = next(bm25_embedding_model.embed(formatted_entry)).as_object()
+            
+            points.append(models.PointStruct(
+                id=i,
+                vector={
+                    config.embedding_model: vector,
+                    config.sparse_embedding_model: sparse_vector
+                },
+                payload=entry
+            ))
+        
+    elif MODE == "md":
+        #? Load grammar entries from MD files
+        COLLECTION_NAME = config.qdrant_collection_name_v2
+        create_qdrant_collection(COLLECTION_NAME)
+        
+        all_entries_md_folder = Path("data/grammar-level-1/entries_md/")
+        
+        if all_entries_md_folder.exists():
+            entries = load_md_entries(all_entries_md_folder)
+            print(f"{len(entries)} grammar entries to upload")
+        else:
+            print("Please run parse_md_to_json.py first to generate JSON files.")
+            exit()
+            
+        # Generate embeddings and create points
+        points = []
+        for i, entry in enumerate(entries):
+
+            parsed_entry = parse_entry_v1(entry) # Create disctionary 
+            formatted_entry = reformat_for_embedding(parsed_entry) # Select only grammar name and description for embedding
+    
+            vector = get_embedding(formatted_entry)
+            sparse_vector = next(bm25_embedding_model.embed(formatted_entry)).as_object()
+            
+            grammar_name = f"{parsed_entry['grammar_name_kr']} - {parsed_entry['grammar_name_rus']}"
+            payload = {
+                "grammar_name": grammar_name,
+                "level" : LEVEL,
+                "content": entry
+            }
+            
+            points.append(models.PointStruct(
+                id=i,
+                vector={
+                    config.embedding_model: vector,
+                    config.sparse_embedding_model: sparse_vector
+                },
+                payload=payload
+            ))
+    
+    else:
+        print("Select MODE")
+        exit()
 
     print(f"Generated {len(points)} points")
 
     # Ingest points to the vector database
 
     client.upsert(
-        collection_name=config.qdrant_collection_name,
+        collection_name=COLLECTION_NAME,
         points=points
     )
 
-    print(f"Upload complete. {len(points)} entries added to {config.qdrant_collection_name} collection.")
+    print(f"Upload complete. {len(points)} entries added to {COLLECTION_NAME} collection.")
     print("You can now query the collection using the Qdrant client.")

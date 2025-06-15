@@ -31,6 +31,7 @@ class Config(BaseSettings):
     )
 
     qdrant_collection_name: str = "korean_grammar"
+    qdrant_collection_name_v2: str = "korean_grammar_v2"
     qdrant_host: str = "localhost"
     qdrant_host_docker: str = "qdrant"
     qdrant_host_cluster: str = (

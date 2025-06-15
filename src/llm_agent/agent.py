@@ -1,3 +1,5 @@
+from typing import Literal, List
+
 import logfire
 
 from dotenv import load_dotenv
@@ -13,7 +15,6 @@ from src.llm_agent.agent_tools import retrieve_docs_tool
 from src.llm_agent.utils.json_to_telegram_md import grammar_entry_to_markdown
 from src.schemas.schemas import (
     RouterAgentDeps,
-    TranslationAgentResult,
     RouterAgentResult,
     RetrievedDoc,
     GrammarSearchAgentResult,
@@ -50,13 +51,14 @@ grammar_agent = Agent(
     instrument=True,
     output_type=GrammarAgentResult,
     instructions="""
+        Ты - профессиональный ИИ ассистент LazyHangeul. Твоя задача - помогать пользователям в изучении корейской грамматики. Следуй следующим правилам, в зависимости от message_type:
         ## direct_grammar_search
         Используй `call_grammar_search_agent`, чтобы вывести найденные грамматики
         - Если call_grammar_search_agent вывел только одну грамматику - выведи её пользователю в изначальном виде
         - Если call_grammar_search_agent вывел несколько грамматик, предоставь пользователю список этих грамматик и предложи выбрать одну
         
         ## thinking_grammar_answer
-        Directly answer the user prompt without using any tools
+        Отвечай напрямую, не используя инструменты
     """
 )
 
@@ -83,8 +85,7 @@ grammar_search_agent = Agent(
         
         2. Используйте извлеченную грамматику для поиска соответствующего объяснения с помощью инструмента `grammar_search`
         
-        3. Определите, какие найденные грамматики соответствуют изначальному запросу, и выведите ТОЛЬКО их (не подходящие
-        грамматики можно сбросить
+        3. Выведите найденные грамматики
         
         Если ничего не найдено - выведите пустой список
     """,
@@ -104,9 +105,31 @@ async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str
     docs = await retrieve_docs_tool(context, search_query, 5)
     if docs:
         # formatted_docs = [grammar_entry_to_markdown(doc.content) for doc in docs]
-        logfire.info(f"Retrieved docs: {docs}")
+        
+        
+        llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
+        for i, doc in enumerate(docs):
+            #! For Version 1 grammars (full in json)
+            # llm_filter_prompt.append(f"{i}. {doc.content.grammar_name_kr} - {doc.content.grammar_name_rus}: {doc.content.description}")
+
+            #! For Version 2 grammars (MD)
+            llm_filter_prompt.append(f"{i}. {doc}")
+        
+        llm_filter_agent = Agent(
+            model="openai:gpt-4o",
+            instrument=True,
+            output_type=List[int],
+            instructions="""
+                Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
+            """
+        )
+        llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
+        filtered_doc_ids = llm_filter_response.output
+        filtered_docs = [docs[i] for i in filtered_doc_ids]
+
+        logfire.info(f"Retrieved docs: {filtered_docs}")
         return docs
-    return "Нет подходящих грамматик"
+    return []
 
 
 # @router_agent.tool

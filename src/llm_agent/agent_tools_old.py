@@ -1,11 +1,12 @@
 """
-Stores all necessary tools used by the agent(s).
+The older version of the functions, that was using Multi-Stage Query search
+Might be useful for thinking_grammar_answer
 """
 
 import logfire
 from dotenv import load_dotenv
 from pydantic_ai import RunContext
-from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
+from qdrant_client.http.models import Prefetch, SparseVector
 
 from src.config.settings import Config
 from src.schemas.schemas import GrammarEntryV2, RetrievedDoc, RouterAgentDeps
@@ -51,25 +52,21 @@ async def retrieve_docs_tool(
         Prefetch(
             query=sparse_vector_query,
             using=config.sparse_embedding_model,
-            limit=retrieve_top_k,
+            limit=retrieve_top_k * 3,
             score_threshold=bm_threshold,
         )
     ]
-    
-    dense_prefetch = [
-        Prefetch(
-            query=vector_query,
-            using=config.embedding_model,
-            limit=retrieve_top_k,
-            score_threshold=vector_threshold,
-        )
-    ]
+
+    # logfire.info("Prefetch configured for sparse vector")
 
     # logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
     hits = context.deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name_v2,
-        prefetch=[bm_25_prefetch, dense_prefetch],
-        query=FusionQuery(fusion=Fusion.RRF),
+        using=config.embedding_model,
+        query=vector_query,
+        limit=retrieve_top_k,
+        prefetch=bm_25_prefetch,
+        score_threshold=vector_threshold,
         with_payload=True,
     ).points
 

@@ -19,10 +19,15 @@ class GrammarEntry(BaseModel):
     notes: Optional[List[str]]
     # TODO: Add irregular verbs examples
     # with_irregular_verbs: Optional[List[str]]
+    
 
+class GrammarEntryV2(BaseModel):
+    grammar_name: str
+    level: Literal[1, 2, 3, 4, 5, 6]
+    content: str
 
 class RetrievedDoc(BaseModel):
-    content: GrammarEntry
+    content: GrammarEntryV2
     score: float
     cross_score: Optional[float] = None
 
@@ -73,4 +78,4 @@ class GrammarAgentResult(BaseModel):
     answer_type: str = "grammar"
 
 class GrammarSearchAgentResult(BaseModel):
-    found_grammars: list[RetrievedDoc | None]
+    found_grammars: list[str | None]
