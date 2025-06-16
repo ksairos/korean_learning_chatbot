@@ -1480,6 +1480,7 @@ dependencies = [
     { name = "krdict-py" },
     { name = "logfire", extra = ["fastapi", "sqlalchemy"] },
     { name = "lxml" },
+    { name = "markdown" },
     { name = "pandas" },
     { name = "psycopg" },
     { name = "psycopg-binary" },
@@ -1530,6 +1531,7 @@ requires-dist = [
     { name = "krdict-py", specifier = ">=3.0.2" },
     { name = "logfire", extras = ["fastapi", "sqlalchemy"], specifier = ">=3.9.0" },
     { name = "lxml", specifier = ">=5.3.1" },
+    { name = "markdown", specifier = ">=3.8" },
     { name = "pandas", specifier = ">=2.3.0" },
     { name = "psycopg", specifier = ">=3.2.6" },
     { name = "psycopg-binary", specifier = ">=3.2.6" },
@@ -1683,6 +1685,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/62/4f/ddb1965901bc388958db9f0c991255b2c469349a741ae8c9cd8a562d70a6/mako-1.3.9.tar.gz", hash = "sha256:b5d65ff3462870feec922dbccf38f6efb44e5714d7b593a656be86663d8600ac", size = 392195 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cd/83/de0a49e7de540513f53ab5d2e105321dedeb08a8f5850f0208decf4390ec/Mako-1.3.9-py3-none-any.whl", hash = "sha256:95920acccb578427a9aa38e37a186b1e43156c87260d7ba18ca63aa4c7cbd3a1", size = 78456 },
+]
+
+[[package]]
+name = "markdown"
+version = "3.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/15/222b423b0b88689c266d9eac4e61396fe2cc53464459d6a37618ac863b24/markdown-3.8.tar.gz", hash = "sha256:7df81e63f0df5c4b24b7d156eb81e4690595239b7d70937d0409f1b0de319c6f", size = 360906 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/3f/afe76f8e2246ffbc867440cbcf90525264df0e658f8a5ca1f872b3f6192a/markdown-3.8-py3-none-any.whl", hash = "sha256:794a929b79c5af141ef5ab0f2f642d0f7b1872981250230e72682346f7cc90dc", size = 106210 },
 ]
 
 [[package]]
