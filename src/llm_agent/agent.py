@@ -19,6 +19,7 @@ from src.schemas.schemas import (
     RetrievedDoc,
     GrammarSearchAgentResult,
     GrammarAgentResult,
+    GrammarEntryV2,
 )
 
 load_dotenv()
@@ -62,20 +63,21 @@ grammar_agent = Agent(
     """
 )
 
-@grammar_agent.tool
-async def call_grammar_search_agent(context: RunContext[RouterAgentDeps], user_prompt: str):
-    r = await grammar_search_agent.run(
-        user_prompt,
-        deps=context.deps,
-        usage_limits=UsageLimits(request_limit=5),
-        output_type=GrammarSearchAgentResult
-    )
-    return r.output.found_grammars
+# @grammar_agent.tool
+# async def call_grammar_search_agent(context: RunContext[RouterAgentDeps], user_prompt: str):
+#     r = await grammar_search_agent.run(
+#         user_prompt,
+#         deps=context.deps,
+#         usage_limits=UsageLimits(request_limit=5),
+#         output_type=List[GrammarEntryV2 | None]
+#     )
+#     return r.output.found_grammars
 
 grammar_search_agent = Agent(
     model="openai:gpt-4o",
     instrument=True,
     instructions="""
+        Ты - мощный поисковик корейских грамматик. Обработай запрос пользователя и найти соответствующие грамматики:
         1. Обработка запроса перед использованием инструмента
         - Если пользователь ввел слово, содержащее грамматическую конструкцию, извлеките грамматическую форму 
         или шаблон в её изначальном виде для дальнейшего поиска. К примеру, если запрос пользователя содержит
@@ -85,16 +87,18 @@ grammar_search_agent = Agent(
         
         2. Используйте извлеченную грамматику для поиска соответствующего объяснения с помощью инструмента `grammar_search`
         
-        3. Выведите найденные грамматики
+        3. Найденные грамматики должны быть выведены строго в том формате, в котором они были получены!
+        
+        ---
         
         Если ничего не найдено - выведите пустой список
     """,
-    output_type=GrammarSearchAgentResult
+    output_type=List[GrammarEntryV2] 
 )
 
 
 @grammar_search_agent.tool
-async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str):
+async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str) -> List[GrammarEntryV2] | None:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
     A tool for extracting grammatical constructions based on the user's query.
@@ -102,34 +106,32 @@ async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str
         context: the call context
         search_query: запрос для поиска
     """
-    docs = await retrieve_docs_tool(context, search_query, 5)
+    docs = await retrieve_docs_tool(context, search_query)
     if docs:
-        # formatted_docs = [grammar_entry_to_markdown(doc.content) for doc in docs]
-        
-        
-        llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
+        llm_filter_prompt = [f"ЗАПРОС ПОЛЬЗОВАТЕЛЯ: '{search_query}'\n\СПИСОК КОРЕЙСКИХ ГРАММАТИК: "]
         for i, doc in enumerate(docs):
             #! For Version 1 grammars (full in json)
-            # llm_filter_prompt.append(f"{i}. {doc.content.grammar_name_kr} - {doc.content.grammar_name_rus}: {doc.content.description}")
+            llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
             #! For Version 2 grammars (MD)
-            llm_filter_prompt.append(f"{i}. {doc}")
+            # llm_filter_prompt.append(f"{i}. {doc}")
         
         llm_filter_agent = Agent(
             model="openai:gpt-4o",
             instrument=True,
             output_type=List[int],
             instructions="""
-                Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
+                На основе ЗАПРОСА ПОЛЬЗОВАТЕЛЯ выберите соответствующие результаты поиска из СПИСКА ГРАММАТИКИ и выведите только их индексы.
             """
         )
+        
         llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
         filtered_doc_ids = llm_filter_response.output
-        filtered_docs = [docs[i] for i in filtered_doc_ids]
+        filtered_docs =[docs[i] for i in filtered_doc_ids]
 
-        logfire.info(f"Retrieved docs: {filtered_docs}")
-        return docs
-    return []
+        logfire.info(f"LLM filtered docs: {filtered_docs}")
+        return filtered_docs
+    return None
 
 
 # @router_agent.tool

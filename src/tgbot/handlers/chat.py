@@ -3,7 +3,6 @@ import asyncio
 from aiogram import types, Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from chatgpt_md_converter import telegram_format
 
 import aiohttp
 import logging
@@ -41,13 +40,26 @@ async def invoke(message: types.Message, state: FSMContext):
             ) as response:
                 await thinking_message.delete()
                 animation_task.cancel()
+                
                 if response.status == 200:
                     data = await response.json()
                     llm_response = data["llm_response"]
-                    # mode = data["mode"]
-
-                    formatted_response = telegram_format(llm_response)
-                    await message.answer(formatted_response)
+                    mode = data["mode"]
+                    
+                    logging.info(f"Message type: {type(llm_response)}\nLLM Response: {llm_response}\nMode: {mode}")
+                    
+                    
+                    if mode == "single_grammar":
+                        
+                        await message.answer(llm_response[0])
+                        
+                    # elif mode == "multiple_grammars":
+                    #     # TODO Implement multiple grammar choice
+                    #     await message.answer(llm_response[0])
+                    
+                    # else:
+                    #     # TODO Implement another answer
+                    #     await message.answer("Временный ответ")
 
                 elif response.status == 403:
                     await message.answer("Unauthorized user")

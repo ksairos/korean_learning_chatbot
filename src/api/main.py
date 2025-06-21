@@ -1,4 +1,5 @@
 import json
+from typing import List
 import logfire
 
 from aiogram import Bot
@@ -15,12 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent, grammar_agent
+from src.llm_agent.agent import router_agent, grammar_search_agent
 from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,
     TelegramMessage,
     GrammarAgentResult,
+    GrammarEntryV2
 )
 
 app = FastAPI()
@@ -95,24 +97,34 @@ async def process_message(
 
     router_answer = f"Сообщение: {message.user_prompt}, тип: {router_agent_response.output.message_type}"
     logfire.info("Router agent response: {response}", response=router_answer)
+    
+    if router_agent_response.output.message_type == "direct_grammar_search":
+        grammar_agent_response = await grammar_search_agent.run(
+            user_prompt=message.user_prompt,
+            deps=deps,
+            usage_limits=UsageLimits(request_limit=5),
+            output_type=List[GrammarEntryV2],
+        )
+        logfire.info("Grammar agent response: {response}", response=grammar_agent_response.output)
+        
+        # TODO Add related grammars
+        if len(grammar_agent_response.output) == 1:
+            result = {"llm_response": grammar_agent_response.output, "mode": "single_grammar"}
+        elif len(grammar_agent_response.output) > 1:
+            result = {"llm_response": grammar_agent_response.output, "mode": "multiple_grammars"}
+        else:
+            router_agent_response.output.message_type = "thinking_grammar_answer"
 
-    grammar_agent_response = await grammar_agent.run(
-        user_prompt=router_answer,
-        deps=deps,
-        usage_limits=UsageLimits(request_limit=5),
-        output_type=GrammarAgentResult,
-    )
-    logfire.info("Grammar agent response: {response}", response=grammar_agent_response.output.llm_response)
-
-    # todo и добавить другого агента
-    # grammar_agent_response: AgentRunResult = await grammar_agent.run()
-
+    if router_agent_response.output.message_type == "thinking_grammar_answer":
+        # TODO Implement thinking grammar answer
+        result = {"llm_response": "Временный ответ", "mode": "thinking_grammar_answer"}
+        
     # Update chat history with new messages
-    new_messages = grammar_agent_response.new_messages()
+    # new_messages = grammar_agent_response.new_messages()
     # background_tasks.add_task(
     #     update_message_history, session, message.user.chat_id, new_messages
     # )
 
-    logfire.info(f"New Messages: {new_messages}")
-
-    return {"llm_response": grammar_agent_response.output.llm_response, "mode": grammar_agent_response.output.answer_type}
+    # logfire.info(f"New Messages: {new_messages}")
+    
+    return result

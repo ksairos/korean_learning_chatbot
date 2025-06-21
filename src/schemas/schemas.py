@@ -22,11 +22,15 @@ class GrammarEntry(BaseModel):
     
 
 class GrammarEntryV2(BaseModel):
-    grammar_name: str
+    grammar_name_kr: str
+    grammar_name_rus: str
     level: Literal[1, 2, 3, 4, 5, 6]
     content: str
+    # TODO: set appropriate list type
+    related_grammars: list
 
 class RetrievedDoc(BaseModel):
+    id: str
     content: GrammarEntryV2
     score: float
     cross_score: Optional[float] = None
@@ -78,4 +82,4 @@ class GrammarAgentResult(BaseModel):
     answer_type: str = "grammar"
 
 class GrammarSearchAgentResult(BaseModel):
-    found_grammars: list[str | None]
+    found_grammars: list[GrammarEntryV2 | None]
