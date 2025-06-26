@@ -16,7 +16,7 @@ logfire.configure(token=config.logfire_api_key)
 
 
 async def retrieve_docs_tool(
-    context: RunContext[RouterAgentDeps], search_query: str, retrieve_top_k: int = 10, rerank_top_k: int = 5
+    context: RunContext[RouterAgentDeps], search_query: str, retrieve_top_k: int = 15, rerank_top_k: int = 5
 ) -> list[GrammarEntryV2] | None:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
@@ -83,6 +83,7 @@ async def retrieve_docs_tool(
         return None
 
     #TODO Try only reranking if the number of retrieved docs > docs to rerank
+    #
     # cross_input = []
     # for doc in docs:
     #     doc_data = " ".join([doc.content.grammar_name_kr, doc.content.grammar_name_rus])
