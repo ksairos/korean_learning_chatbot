@@ -1,46 +1,46 @@
 services:
-  app-base:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: korean-learning-app-base
-    env_file:
-      - .env
-    networks:
-      - app-network
-  
-  tgbot:
-    image: korean-learning-app-base
-    env_file:
-      - .env
-    depends_on:
-      - api
-      - qdrant
-      - postgres
-    command: ["python", "-m", "src.tgbot.bot"]
-    develop:
-      watch:
-       - path: src/
-         action: sync+restart
-         target: src/
-    networks:
-      - app-network
-
-  api:
-    image: korean-learning-app-base
-    env_file:
-      - .env
-    depends_on:
-      - qdrant
-      - postgres
-    command: ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
-      - model_cache:/root/.cache/huggingface/hub
-    networks:
-      - app-network
+#  app-base:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    image: korean-learning-app-base
+#    env_file:
+#      - .env.prod
+#    networks:
+#      - app-network
+#
+#  tgbot:
+#    image: korean-learning-app-base
+#    env_file:
+#      - .env.prod
+#    depends_on:
+#      - api
+#      - qdrant
+#      - postgres
+#    command: ["python", "-m", "src.tgbot.bot"]
+#    develop:
+#      watch:
+#       - path: src/
+#         action: sync+restart
+#         target: src/
+#    networks:
+#      - app-network
+#
+#  api:
+#    image: korean-learning-app-base
+#    env_file:
+#      - .env.prod
+#    depends_on:
+#      - qdrant
+#      - postgres
+#    command: ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - ./data:/app/data
+#      - model_cache:/root/.cache/huggingface/hub
+#    networks:
+#      - app-network
     
   qdrant:
     image: qdrant/qdrant

@@ -1,9 +1,8 @@
-from typing import Literal, List
+from typing import List
 
 import logfire
 
 from dotenv import load_dotenv
-from pydantic_ai.usage import UsageLimits
 
 from src.config.prompts import prompts
 from src.config.settings import Config
@@ -12,13 +11,9 @@ from pydantic_ai import Agent, RunContext
 
 
 from src.llm_agent.agent_tools import retrieve_docs_tool
-from src.utils.json_to_telegram_md import grammar_entry_to_markdown
 from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,
-    RetrievedDoc,
-    GrammarSearchAgentResult,
-    GrammarAgentResult,
     GrammarEntryV2,
 )
 
@@ -27,7 +22,7 @@ load_dotenv()
 config = Config()
 logfire.configure(token=config.logfire_api_key)
 
-#INFO Modify to change the bot language
+#IMPORTANT Modify to change the bot language
 language = "ru"
 if language == "ru":
     router_prompt = prompts.router_prompt_v2_ru
@@ -35,6 +30,7 @@ if language == "ru":
 else:
     router_prompt = prompts.router_prompt_v2_en
     translator_prompt = prompts.translator_prompt_en
+
 
 router_agent = Agent(
     model="openai:gpt-4o",
@@ -47,31 +43,6 @@ router_agent = Agent(
     """
 )
 
-grammar_agent = Agent(
-    model="openai:gpt-4o",
-    instrument=True,
-    output_type=GrammarAgentResult,
-    instructions="""
-        Ты - профессиональный ИИ ассистент LazyHangeul. Твоя задача - помогать пользователям в изучении корейской грамматики. Следуй следующим правилам:
-        ## direct_grammar_search
-        Используй `call_grammar_search_agent`, чтобы вывести найденные грамматики
-        - Если call_grammar_search_agent вывел только одну грамматику - выведи её пользователю в изначальном виде
-        - Если call_grammar_search_agent вывел несколько грамматик, предоставь пользователю список этих грамматик и предложи выбрать одну
-        
-        ## thinking_grammar_answer
-        Отвечай напрямую, не используя инструменты
-    """
-)
-
-@grammar_agent.tool
-async def call_grammar_search_agent(context: RunContext[RouterAgentDeps], user_prompt: str):
-    r = await grammar_search_agent.run(
-        user_prompt,
-        deps=context.deps,
-        usage_limits=UsageLimits(request_limit=5),
-        output_type=GrammarSearchAgentResult
-    )
-    return r.output.found_grammars
 
 grammar_search_agent = Agent(
     model="openai:gpt-4o",
@@ -94,6 +65,17 @@ grammar_search_agent = Agent(
 )
 
 
+thinking_grammar_agent = Agent(
+    model="openai:gpt-4o",
+    instrument=True,
+    output_type=str,
+    instructions="""
+        РОЛЬ: Ты - профессиональный ИИ ассистент LazyHangeul, натренерованный на преподавание корейской грамматики. 
+        ТВОЯ ЗАДАЧА: Помогать пользователям в изучении корейской грамматики.
+    """
+)
+
+
 @grammar_search_agent.tool
 async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str) -> list[GrammarEntryV2 | None]:
     """
@@ -103,7 +85,7 @@ async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str
         context: the call context
         search_query: запрос для поиска
     """
-    docs = await retrieve_docs_tool(context, search_query)
+    docs: list[GrammarEntryV2] | None = await retrieve_docs_tool(context, search_query)
     if docs:
         llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
         for i, doc in enumerate(docs):
@@ -128,55 +110,3 @@ async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str
         logfire.info(f"LLM filtered docs: {filtered_docs}")
         return filtered_docs
     return []
-
-
-# @router_agent.tool
-# async def output_single_doc(context: RunContext[RouterAgentDeps], search_query: str):
-#     """
-#     Инструмент для поиска грамматической конструкций на основе запроса пользователя.
-#     A tool for extracting grammatical constructions based on the user's query.
-#     Args:
-#         context: the call context
-#         search_query: запрос для поиска
-#     """
-#     pass
-#
-
-# @router_agent.tool
-# async def retrieve_single_grammar(context: RunContext[RouterAgentDeps], search_query: str):
-#     """
-#         Инструмент для извлечения ОДНОЙ грамматической конструкции на основе запроса пользователя.
-#         A tool for extracting a SINGLE grammatical construction based on the user's query.
-#         Args:
-#             context: the call context
-#             search_query: запрос для поиска
-#         """
-#     docs = await retrieve_docs_tool(context, search_query, 1)
-#     if docs:
-#         doc = docs[0]
-#         logfire.info(f"Retrieved doc: {doc}")
-
-#         return grammar_entry_to_markdown(doc.content)
-    
-#     return "Нет подходящих грамматик"
-
-
-
-# @router_agent.tool_plain
-# async def translation_agent_call(user_prompt: str):
-#     """
-#     Инструмент для перевода текста с русского на корейский и наоборот.
-#     A tool for translating text from Russian to Korean and vice versa.
-#     Args:
-#         user_prompt: запрос для перевода
-#     """
-#     r = await translation_agent.run(user_prompt, output_type=TranslationAgentResult)
-#     return r.output.translation
-#
-#
-# translation_agent = Agent(
-#     "openai:gpt-4.5-preview",
-#     instrument=True,
-#     output_type=TranslationAgentResult,
-#     instructions=translator_prompt
-# )

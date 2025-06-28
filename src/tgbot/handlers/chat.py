@@ -7,13 +7,15 @@ from aiogram.fsm.context import FSMContext
 import aiohttp
 import logging
 
+from src.config.settings import Config
 from src.schemas.schemas import TelegramMessage, TelegramUser
 from src.tgbot.misc.utils import animate_thinking
+from src.utils.json_to_telegram_md import grammar_entry_to_markdown, custom_telegram_format
 
 chat_router = Router()
+config = Config()
 
-API_URL = "http://api:8000/invoke"
-
+API_URL = f"http://{config.fastapi_host}:{config.fastapi_port}/invoke"
 
 @chat_router.message(F.text, StateFilter(None))
 async def invoke(message: types.Message, state: FSMContext):
@@ -46,20 +48,24 @@ async def invoke(message: types.Message, state: FSMContext):
                     llm_response = data["llm_response"]
                     mode = data["mode"]
                     
-                    logging.info(f"Message type: {type(llm_response)}\nLLM Response: {llm_response}\nMode: {mode}")
-                    
+                    logging.info(f"\n================\nMessage type: {type(llm_response)}\nLLM Response: {llm_response}\nMode: {mode}\n================\n")
                     
                     if mode == "single_grammar":
-                        
-                        await message.answer(llm_response[0])
-                        
-                    # elif mode == "multiple_grammars":
-                    #     # TODO Implement multiple grammar choice
-                    #     await message.answer(llm_response[0])
+                        formatted_response = grammar_entry_to_markdown(llm_response[0])
+                        await message.answer(formatted_response)
+
+                    elif mode == "multiple_grammars":
+                        # FIXME Implement multiple grammar choice
+                        formatted_response = grammar_entry_to_markdown(llm_response[0])
+                        await message.answer(formatted_response)
                     
-                    # else:
-                    #     # TODO Implement another answer
-                    #     await message.answer("Временный ответ")
+                    elif mode == "no_grammars":
+                        # FIXME Implement another answer
+                        await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Однако я могу попровать ответить сам ☝️🤓")
+                        await message.answer(custom_telegram_format(llm_response))
+
+                    else:
+                        await message.answer(custom_telegram_format(llm_response))
 
                 elif response.status == 403:
                     await message.answer("Unauthorized user")
