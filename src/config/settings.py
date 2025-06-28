@@ -26,6 +26,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
     #     return uri.render_as_string(hide_password=False)
     
 class Config(BaseSettings):
+
+    #! IMPORTANT: If you add variables here, make sure to add them to .env and .env.example
+
     model_config = SettingsConfigDict(
         env_file=".env", env_ignore_empty=True, extra="ignore"
     )
@@ -33,14 +36,9 @@ class Config(BaseSettings):
     qdrant_collection_name: str = "korean_grammar"
     qdrant_collection_name_v2: str = "korean_grammar_v2"
     qdrant_host: str = "localhost"
-    qdrant_host_docker: str = "qdrant"
-    qdrant_host_cluster: str = (
-        "https://8e483fe5-04a1-4fb5-a205-c62811d2f007.us-east-1-0.aws.cloud.qdrant.io"
-    )
+    # qdrant_host_docker: str = "qdrant"
     qdrant_port: int = 6333
     qdrant_api_key: str | None = None
-
-
 
     bot_token: str | None = None
     admin_ids: list[int] | None = None
@@ -60,8 +58,10 @@ class Config(BaseSettings):
     postgres_host: str | None = None
     postgres_port: int | None = None
 
-    postgres_host_ext: str | None = None
-    postgres_port_ext: int | None = None
+    fastapi_host: str | None = None
+    fastapi_port: int | None = None
+
+
 
     @computed_field
     @property
@@ -82,8 +82,8 @@ class Config(BaseSettings):
             scheme="postgresql+asyncpg",
             username=self.postgres_user,
             password=self.postgres_password,
-            host=self.postgres_host_ext,
-            port=self.postgres_port_ext,
+            host=self.postgres_host,
+            port=self.postgres_port,
             path=self.postgres_db,
         )
 
@@ -95,8 +95,8 @@ class Config(BaseSettings):
             scheme="postgresql+psycopg",
             username=self.postgres_user,
             password=self.postgres_password,
-            host=self.postgres_host_ext,
-            port=self.postgres_port_ext,
+            host=self.postgres_host,
+            port=self.postgres_port,
             path=self.postgres_db,
         )
     

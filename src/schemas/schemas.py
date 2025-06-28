@@ -65,21 +65,9 @@ class RouterAgentDeps:
     reranking_model: CrossEncoder
     session: AsyncSession
 
-
-class TranslationAgentResult(BaseModel):
-    translation: str = ""
-
-
 class RouterAgentResult(BaseModel):
     user_message: str
     message_type: Literal[
         "direct_grammar_search",
         "thinking_grammar_answer",
     ] = "direct_grammar_answer"
-
-class GrammarAgentResult(BaseModel):
-    llm_response: str
-    answer_type: str = "grammar"
-
-class GrammarSearchAgentResult(BaseModel):
-    found_grammars: list[GrammarEntryV2 | None]
