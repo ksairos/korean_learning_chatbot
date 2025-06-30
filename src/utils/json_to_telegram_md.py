@@ -118,8 +118,6 @@ def custom_telegram_format(text: str) -> str:
 
 
 def grammar_entry_to_markdown(entry: dict) -> str:
-    # TODO Добавить использование с нерегулярными глаголами
-
     lines = []
     
     # Header: combine the Korean and Russian grammar names in a bold line.
