@@ -70,4 +70,5 @@ class RouterAgentResult(BaseModel):
     message_type: Literal[
         "direct_grammar_search",
         "thinking_grammar_answer",
+        "casual_answer",
     ] = "direct_grammar_answer"
