@@ -1,46 +1,52 @@
-# Telegram Bot Module
+# Telegram Bot Package
 
-This module implements the Telegram bot interface for the Korean Learning Bot, handling user interactions and providing language learning features through an intuitive chat interface.
+## Purpose
+Aiogram-based Telegram bot that serves as the frontend interface for the Korean learning chatbot. Handles user interactions, message routing, and response formatting.
 
-## Core Features
+## Key Components
+- **bot.py**: Main bot application with startup, middleware, and polling configuration
+- **handlers/**: Message and callback handlers organized by functionality
+- **keyboards/**: Inline keyboards for user interaction
+- **middlewares/**: Custom middleware for configuration and database integration
+- **services/**: Broadcasting and utility services
+- **filters/**: Custom filters for message processing
+- **misc/**: Bot states and utility functions
 
-- User registration and session management
-- Message handling and routing to API endpoints
-- Korean vocabulary lookup with detailed examples
-- Interactive pagination for browsing examples
-- Command system for accessing different features
-- Admin commands for maintenance and monitoring
+## Handler Structure
+- **user.py**: User registration and basic interactions
+- **chat.py**: Main chat message processing and API communication
+- **admin.py**: Administrative functions
+- **help.py**: Help and information commands
+- **vocab.py**: Vocabulary-related features
 
-## Implementation Details
+## Dependencies
+- **src/api/**: Sends user messages to API for processing
+- **src/db/**: User management and registration
+- **src/utils/**: Message formatting utilities
+- **src/config/**: Bot configuration and settings
 
-The module is organized into several components:
+## Key Features
+- User registration and authentication
+- Message forwarding to API backend
+- Response formatting with Telegram HTML support
+- Admin broadcasting capabilities
+- Custom keyboards for enhanced UX
+- Redis/Memory storage for FSM states
 
-1. **bot.py**: Main entry point that configures and starts the bot
-   - Sets up command menu
-   - Configures middleware and handlers
-   - Initializes the bot with Telegram API
+## Usage
+Start the bot:
+```bash
+docker compose up tgbot
+```
 
-2. **handlers/**: Message and command handlers
-   - chat.py: Processes regular chat messages and routes to API
-   - vocab.py: Handles Korean dictionary lookups
-   - help.py: Provides help information
-   - user.py: Manages user-related commands like /start
-   - admin.py: Administrative commands for bot management
+Available commands:
+- `/start`: Bot initialization and user registration
+- `/help`: Display help information
+- `/menu`: Show main menu
+- `/vocab`: Access vocabulary features
 
-3. **keyboards/**: UI components
-   - inline.py: General inline keyboard utilities
-   - vocab_keyboard.py: Special keyboards for vocabulary browsing
-
-4. **middlewares/**: Request processing middleware
-   - config.py: Injects configuration into handler context
-
-5. **filters/**: Message filtering
-   - admin.py: Restricts admin commands to authorized users
-
-6. **misc/**: Supporting utilities
-   - states.py: FSM states for dialog management
-
-7. **services/**: Additional services
-   - broadcaster.py: Sends messages to multiple users
-
-The Telegram bot module serves as the user-facing component of the application, providing an intuitive interface for interacting with the Korean Learning Bot's features.
+## Message Flow
+1. User sends message to Telegram bot
+2. Bot forwards to API via `/invoke` endpoint
+3. API processes through LLM agents
+4. Bot receives formatted response and displays to user

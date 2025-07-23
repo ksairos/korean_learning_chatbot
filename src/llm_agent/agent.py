@@ -101,6 +101,15 @@ system_agent = Agent(
 )
 
 
+summarize_agent = Agent(
+    'openai:gpt-4o-mini',
+    instructions="""
+    Summarize this conversation, omitting small talk and unrelated topics.
+    Focus on the essentials of the discussion and next steps
+    """,
+)
+
+
 @grammar_search_agent.tool
 async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str) -> list[GrammarEntryV2 | None]:
     """

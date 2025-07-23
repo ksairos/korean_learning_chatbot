@@ -48,9 +48,6 @@ def custom_telegram_format(text: str) -> str:
     Converts markdown in the provided text to HTML supported by Telegram.
     """
 
-    # Step 0: Combine blockquotes
-    text = combine_blockquotes(text)
-
     # Step 1: Convert HTML reserved symbols
     text = convert_html_chars(text)
 

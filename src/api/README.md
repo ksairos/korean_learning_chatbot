@@ -1,22 +1,32 @@
-# API Module
+# API Package
 
-The API module provides a FastAPI application that serves as the communication layer between the Telegram bot and the LLM agents. It exposes endpoints that process user messages and return appropriate responses.
+## Purpose
+FastAPI-based REST API service that serves as the backend for the Korean learning chatbot. It receives messages from the Telegram bot and orchestrates the LLM agent responses.
 
-## Core Features
+## Key Components
+- **main.py**: FastAPI application with `/invoke` endpoint for processing user messages
+- Routes user messages through multiple specialized agents based on message type
+- Handles user authentication and message history management
+- Integrates with OpenAI, Qdrant vector database, and PostgreSQL database
 
-- FastAPI server with `/invoke` endpoint for processing user requests
-- Integration with OpenAI for text embeddings and LLM-powered responses
-- Connects to Qdrant for vector search of Korean grammar concepts
-- Uses cross-encoder for result re-ranking to improve relevance
-- Manages message history through database sessions
-- Implements hybrid search combining dense and sparse embeddings
+## Dependencies
+- **src/llm_agent/**: Uses router, grammar search, thinking grammar, and system agents
+- **src/db/**: Database operations for user management and message history
+- **src/schemas/**: Pydantic models for request/response validation
+- **src/config/**: Configuration and settings management
 
-## Implementation Details
+## Usage
+Start the API server:
+```bash
+uv run fastapi dev src/api/main.py
+```
 
-The main FastAPI application handles:
-- Processing incoming messages from the Telegram bot
-- Routing requests to appropriate LLM agents based on message content
-- Returning formatted responses ready for Telegram display
-- Managing conversation context and message history
+The API exposes:
+- `GET /`: Health check endpoint
+- `POST /invoke`: Main endpoint for processing Telegram messages
 
-The API acts as the central hub for the application's AI capabilities, connecting the user interface (Telegram bot) with the backend LLM processing and vector database.
+## Message Flow
+1. Receives `TelegramMessage` from Telegram bot
+2. Authenticates user against registered users
+3. Routes to appropriate agent based on message type classification
+4. Returns formatted response with processing mode indicator

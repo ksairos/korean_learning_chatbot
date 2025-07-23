@@ -1,34 +1,36 @@
-# LLM Agent Module
+# LLM Agent Package
 
-This module provides the core NLP capabilities for the Korean Learning Bot, implementing different LLM-powered agents, using PydanticAI that handle various user interactions.
+## Purpose
+Implements a multi-agent system for processing Korean language learning queries using OpenAI's GPT models. Routes user messages to specialized agents based on query type and integrates with RAG (Retrieval-Augmented Generation) for grammar search.
 
-## Core Features
+## Key Components
+- **agent.py**: Defines four specialized agents with distinct roles
+- **agent_tools.py**: RAG tools for grammar retrieval from Qdrant vector database
+- **agent_tools_old.py**: Legacy tool implementations
 
-- Router agent for intent classification and message routing
-- Translation agent for Korean-Russian translation 
-- Document retrieval from vector database
-- Hybrid search combining dense and sparse embeddings
-- Cross-encoder reranking for improved result relevance
+## Agents
+- **router_agent**: Classifies user messages into categories (grammar search, thinking answer, casual)
+- **grammar_search_agent**: Searches grammar database and filters results using LLM
+- **thinking_grammar_agent**: Provides explanations for grammar-related questions
+- **system_agent**: Handles general chatbot interactions and non-grammar queries
 
-## Implementation Details
+## Dependencies
+- **src/qdrant_db/**: Vector database integration for grammar retrieval
+- **src/schemas/**: Pydantic models for agent input/output
+- **src/config/**: Prompts and configuration settings
 
-The module consists of the following key components:
+## Key Features
+- Message routing based on content classification
+- RAG-powered grammar search with semantic similarity
+- Multi-language support (Russian/English interfaces)
+- LLM-based result filtering and relevance scoring
+- Instrumentation with Logfire for monitoring
 
-1. **agent.py**: Implements the main agent functionality
-   - RouterAgent for 
-     - Classifying user intent and routing to specialized agents
-     - Direct answering
-     - Grammar retrieval using tools
-     - Grammar output or explanation based on user intent
-   - TranslationAgent for handling language translation requests
+## Usage
+Agents are invoked through the API layer with:
+```python
+router_agent.run(user_prompt=message, deps=deps, output_type=RouterAgentResult)
+```
 
-2. **agent_tools.py**: Provides specialized tools for the agents
-   - retrieve_documents: Searches for relevant grammar documents
-   - rerank_results: Uses cross-encoder to improve retrieval relevance
-   - search_grammar: Semantic search for grammar points
-   - rewrite_query: Planned tool to improve search queries
-
-3. **utils/**: Supporting utilities
-   - json_to_telegram_md.py: Converts structured JSON responses to Telegram-compatible markdown
-
-The LLM agent module forms the AI brain of the Korean Learning Bot, providing intelligent responses and language learning assistance through specialized agents.
+## Language Configuration
+Bot language is configured via the `language` variable in agent.py (currently set to "ru" for Russian).

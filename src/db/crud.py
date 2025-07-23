@@ -1,7 +1,7 @@
 import logfire
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelRequest, ModelResponse
 
 from src.db.models import ChatModel, MessageBlobModel, UserModel
 from src.schemas.schemas import TelegramUser
@@ -41,7 +41,7 @@ async def add_user(session: AsyncSession, user: TelegramUser) -> None:
             raise e
 
 
-async def get_message_history(session: AsyncSession, user: TelegramUser, limit: int) -> list[ModelMessage]:
+async def get_message_history(session: AsyncSession, user: TelegramUser) -> list[ModelMessage]:
     """
     Get message history by using chat ID
     Args:
@@ -54,6 +54,7 @@ async def get_message_history(session: AsyncSession, user: TelegramUser, limit: 
 
     if not chat:
         # TODO Automatically create chat when user /start
+        logfire.error(f"Chat {user.chat_id} doesn't exist, adding new user")
         await add_user(session, user)
         return chat_history
 
@@ -61,34 +62,48 @@ async def get_message_history(session: AsyncSession, user: TelegramUser, limit: 
         await session.execute(
             chat.messages.
             order_by(desc(MessageBlobModel.created_at))
-            .limit(limit)
         )
     ).scalars().all()
 
     for turn in reversed(recent):
-        print(turn.created_at)
+        # print(turn.created_at)
         chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
 
     return chat_history
 
 
 async def update_message_history(
-    session: AsyncSession, chat_id: int, new_messages: bytes
+    session: AsyncSession, user: TelegramUser, new_messages: list[ModelRequest | ModelResponse] | bytes
 ) -> None:
     """
     Update message history by using chat ID with new messages
     Args:
         session: Database session
-        chat_id: Chat ID
+        user: Telegram user class
         new_messages: New message blobs
     """
-    chat = await session.get(ChatModel, chat_id)
+    chat = await session.get(ChatModel, user.chat_id)
+    chat_history = []
+
     if not chat:
-        logfire.error(f"Something went wrong: chat {chat_id} doesn't exist")
-        return
+        logfire.error(f"Chat {user.chat_id} doesn't exist, adding new user")
+        await add_user(session, user)
+        chat = await session.get(ChatModel, user.chat_id)
+
+    else:
+        recent = (
+            await session.execute(
+                chat.messages.
+                order_by(desc(MessageBlobModel.created_at))
+            )
+        ).scalars().all()
+
+        for turn in reversed(recent):
+            chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
+
 
     new_message = MessageBlobModel(
-        chat_id=chat_id,
+        chat_id=user.chat_id,
         data=new_messages,
     )
 
@@ -101,7 +116,7 @@ async def update_message_history(
 
     except Exception as e:
         await session.rollback()
-        logfire.error(f"An unexpected error occurred adding message to chat {chat_id}: {e}")
+        logfire.error(f"An unexpected error occurred adding message to chat {user.chat_id}: {e}")
 
 
 async def get_user_ids(session: AsyncSession):

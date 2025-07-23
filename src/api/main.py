@@ -138,11 +138,11 @@ async def process_message(
                 return {"llm_response": grammar_search_response.output, "mode": mode}
 
             # Update chat history with new messages
-            # new_messages = grammar_search_response.new_messages()
-            # background_tasks.add_task(
-            #     update_message_history, session, message.user.chat_id, new_messages
-            # )
-            # local_logfire.info(f"New Messages: {new_messages}")
+            new_messages = grammar_search_response.new_messages()
+            background_tasks.add_task(
+                update_message_history, session, message.user, new_messages
+            )
+            local_logfire.info(f"New Messages: {new_messages}")
 
     if router_agent_response.output.message_type == "thinking_grammar_answer":
         # TODO Implement RAG for the thinking grammar answer
