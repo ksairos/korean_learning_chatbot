@@ -27,7 +27,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
     
 class Config(BaseSettings):
 
-    #! IMPORTANT: If you add variables here, make sure to add them to .env and .env.example
+    #! IMPORTANT: If you add variables here, make sure to add them to .env, .env.example and /korean_learning_chatbot_notebooks
 
     model_config = SettingsConfigDict(
         env_file=".env", env_ignore_empty=True, extra="ignore"
@@ -35,6 +35,7 @@ class Config(BaseSettings):
 
     qdrant_collection_name: str = "korean_grammar"
     qdrant_collection_name_v2: str = "korean_grammar_v2"
+    qdrant_collection_name_rag: str = "howtostudykorean"
     qdrant_host: str = "localhost"
     # qdrant_host_docker: str = "qdrant"
     qdrant_port: int = 6333

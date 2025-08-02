@@ -67,7 +67,6 @@ logfire.instrument_fastapi(app)
 async def root():
     return {"message": "API"}
 
-
 @app.post("/invoke")
 async def process_message(
     message: TelegramMessage,
@@ -94,7 +93,7 @@ async def process_message(
     )
 
     # Retrieve message history if present
-    message_history = await get_message_history(session, message.user, 5)
+    message_history = await get_message_history(session, message.user)
 
     router_agent_response: AgentRunResult = await router_agent.run(
         user_prompt=message.user_prompt,
@@ -111,6 +110,8 @@ async def process_message(
     )
 
     if router_agent_response.output.message_type == "direct_grammar_search":
+        # TODO: Попробовать использовать grammar_search tool напрямую, без использования grammar_search_agent-а
+        # TODO: так как сейчас grammar_search_agent играет роль Query Rewriter-а
         grammar_search_response = await grammar_search_agent.run(
             user_prompt=message.user_prompt,
             deps=deps,
@@ -155,7 +156,7 @@ async def process_message(
         )
         local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
 
-        # "mode" will be no_grammar only if message type was converted from direct_grammar_search
+        # "mode" will be "no_grammar" only if message type was converted from direct_grammar_search
         if not mode == "no_grammar":
             mode = "thinking_grammar_answer"
 

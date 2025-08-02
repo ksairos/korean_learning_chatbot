@@ -4,7 +4,6 @@ import re
 
 from chatgpt_md_converter.converters import convert_html_chars
 from chatgpt_md_converter.extractors import extract_and_convert_code_blocks, reinsert_code_blocks
-from chatgpt_md_converter.formatters import combine_blockquotes
 from chatgpt_md_converter.helpers import remove_blockquote_escaping, remove_spoiler_escaping
 
 def split_by_tag(out_text: str, md_tag: str, html_tag: str) -> str:

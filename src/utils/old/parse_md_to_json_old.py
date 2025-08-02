@@ -3,7 +3,7 @@
 
 1) MD with all grammars -> Json file with grammars
 - Takes a markdown file with all grammar entries and converts it to JSON.
-- Used before the create_qdrant_collection.py or create_qdrant_collection.ipynb
+- Used before the create_qdrant_collection.py or create_qdrant_grammar_collection.ipynb
 
 2) Split MD with all grammars -> a folder of MD files
 """

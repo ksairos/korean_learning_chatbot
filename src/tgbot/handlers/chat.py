@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime, timedelta
 
 from aiogram import types, Router, F
-from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -97,7 +96,7 @@ async def invoke(message: types.Message, state: FSMContext):
 
                     elif mode == "no_grammars":
                         # FIXME Implement another answer
-                        await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Однако я могу попровать ответить сам ☝️🤓")
+                        await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Однако я могу попробовать ответить сам ☝️🤓")
                         await message.answer(custom_telegram_format(llm_response))
 
                     else:

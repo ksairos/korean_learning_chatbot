@@ -29,9 +29,16 @@ class GrammarEntryV2(BaseModel):
     # TODO: set appropriate list type
     related_grammars: list
 
-class RetrievedDoc(BaseModel):
+class RetrievedGrammar(BaseModel):
     id: str
     content: GrammarEntryV2
+    score: float
+    cross_score: Optional[float] = None
+
+
+class RetrievedDoc(BaseModel):
+    id: str
+    content: dict
     score: float
     cross_score: Optional[float] = None
 
