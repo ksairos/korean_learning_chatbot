@@ -3,9 +3,12 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from chatgpt_md_converter import telegram_format
 
+from src.db.crud import add_user
+from src.schemas.schemas import TelegramUser
+from src.db.database import get_db
+
 user_router = Router()
 
-# TODO Handle adding new users to the database after /start command
 @user_router.message(CommandStart())
 async def user_start(message: Message):
     """Handle the /start command"""
@@ -13,7 +16,18 @@ async def user_start(message: Message):
         telegram_format(
             "Приветствую! Я - LazyHangeul, твой помощник в изучении корейской грамматики.\n"
             "Какую грамматику тебе объяснить?\n\n"
-            "Hello! I'm LazyHangeul, your Korean grammar learning assistant\n"
-            "Which grammar would you like to learn today?"
         )
     )
+
+    # TODO Uncomment to turn on user adding with /start
+
+    # user = TelegramUser(
+    #     user_id=message.from_user.id,
+    #     username=message.from_user.username,
+    #     first_name=message.from_user.first_name,
+    #     last_name=message.from_user.last_name,
+    #     chat_id=message.chat.id
+    # )
+    #
+    # async for session in get_db():
+    #     await add_user(session=session, user=user)

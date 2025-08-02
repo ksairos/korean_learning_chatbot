@@ -87,7 +87,6 @@
 #         logfire.info("No documents found.")
 #         return None
 #
-#     #TODO Try only reranking if the number of retrieved docs > docs to rerank
 #     cross_input = []
 #     for doc in docs:
 #         #! For Version 1 grammars (full in json)

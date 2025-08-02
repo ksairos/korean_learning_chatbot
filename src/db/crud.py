@@ -53,7 +53,6 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
     chat_history: list[ModelMessage] = []
 
     if not chat:
-        # TODO Automatically create chat when user /start
         logfire.error(f"Chat {user.chat_id} doesn't exist, adding new user")
         await add_user(session, user)
         return chat_history

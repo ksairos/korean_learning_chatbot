@@ -30,7 +30,7 @@ bot = Bot(token=config.bot_token)
 openai_client = AsyncOpenAI()
 # TODO: Add async support using AsyncQdrantClient
 qdrant_client = QdrantClient(
-    # TODO: Use qdrant_host_docker if running in docker
+    # IMPORTANT: Use qdrant_host_docker if running in docker
     # host=config.qdrant_host_docker,
     host=config.qdrant_host,
     port=config.qdrant_port,
@@ -146,7 +146,6 @@ async def process_message(
             local_logfire.info(f"New Messages: {new_messages}")
 
     if router_agent_response.output.message_type == "thinking_grammar_answer":
-        # TODO Implement RAG for the thinking grammar answer
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
             deps=deps,
