@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import logfire
 
@@ -38,48 +38,56 @@ router_agent = Agent(
     output_type=RouterAgentResult,
     instructions="""
         You're the routing agent for a multi-agent assistant. Classify the user's message and choose the appropriate agent to handle the request:
-        1. The user's request (either in Russian or Korean) can be answered with the pre-defined explanation of a specific Korean grammar retrieved from the database. Set message_type=direct_grammar_search
-        2. The user's request needs an explanation of a grammar structure or a grammar related question (meaning, grammar description output alone is not enough). Set message_type=thinking_grammar_answer
+        1. The user's request can be answered with the comprehensive explanation of a specific Korean grammar. Set message_type=direct_grammar_search
+        2. The user's request needs a more detailed explanation of a grammar structure or a grammar related question (meaning, grammar description output alone is not enough). Set message_type=thinking_grammar_answer
         3. The user's request is not related to Korean grammar, and requires a general response. Set message_type=casual_answer
     """
 )
 
 
-grammar_search_agent = Agent(
-    model="openai:gpt-4.1",
+query_rewriter_agent = Agent(
+    model="openai:gpt-4.1-mini",
     instrument=True,
     instructions="""
-        1. Обработка запроса перед использованием инструмента
+        Вы - мощный query rewriter в мульти-агентной системе по изучению корейской грамматики.
         - Если пользователь ввел слово, содержащее грамматическую конструкцию, извлеките грамматическую форму 
         или шаблон в её изначальном виде для дальнейшего поиска. К примеру, если запрос пользователя содержит
         "가고 싶어요", извлеките "고 싶다".
         - Если пользователь запрашивает грамматику на русском языке, используйте только её ("грамматика будущего 
         времени в корейском" -> "будущее время")
         
-        2. Используйте извлеченную грамматику для поиска соответствующего объяснения с помощью инструмента `grammar_search`
-        
-        ВАЖНО: найденные грамматики должны быть выведены строго в том формате, в котором они были получены!
-        
-        Если ничего не найдено - выведите пустой список
+        Если ничего не найдено - выведите None
     """,
-    output_type=list[GrammarEntryV2 | None]
+    output_type= Union[str|None]
 )
 
-# TODO: Implement RAG to the thinking agent
+hyde_agent = Agent(
+        model="openai:gpt-4o-mini",
+        instrument=True,
+        instructions="""
+            Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, 
+            который напрямую отвечает на этот вопрос. Текст должен быть кратким и содержать только необходимую информацию. 
+            Уместите ответ в 1-2 предложениях
+        """
+)
+
 thinking_grammar_agent = Agent(
-    model="openai:gpt-4.1",
+    model="openai:gpt-4.1-mini",
     instrument=True,
-    output_type=str,
     instructions="""
-        - Используйте запрос пользователя для поиска соответствующего объяснения с помощью инструмента `docs_search`
-        - Сформируйте краткий и точный ответ на основе найденной информации. При необходимости используйте примеры из этой же информации.
-        Если подходящих документов нет - ответьте на запрос пользователя самостоятельно
+        Ты - профессиональный преподаватель корейского языка. Основываясь на предоставленной информации RETRIEVED DOCS, 
+        сформируйте краткий и точный ответ на запрос пользователя. При необходимости используйте примеры из этой же информации. 
+        Если подходящих документов нет, постарайтесь ответить на запрос пользователя самостоятельно.
     """
 )
 
+@thinking_grammar_agent.system_prompt
+def add_docs(ctx: RunContext[list[dict | None]]) -> str:
+    return f"RETRIEVED DOCS: {ctx.deps}"
+
 
 system_agent = Agent(
-    model="openai:gpt-4.1",
+    model="openai:gpt-4.1-mini",
     instrument=True,
     output_type=str,
     instructions="""
@@ -103,93 +111,9 @@ system_agent = Agent(
 
 
 summarize_agent = Agent(
-    'openai:gpt-4.1-nano',
+    'openai:gpt-4.1-mini',
     instructions="""
     Summarize this conversation, omitting small talk and unrelated topics.
     Focus on the essentials of the discussion and next steps
     """,
 )
-
-
-@grammar_search_agent.tool
-async def grammar_search(context: RunContext[RouterAgentDeps], search_query: str) -> list[GrammarEntryV2 | None]:
-    """
-    Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
-    A tool for extracting grammatical constructions based on the user's query.
-    Args:
-        context: the call context
-        search_query: запрос для поиска
-    """
-    docs: list[GrammarEntryV2] | None = await retrieve_grammars_tool(context, search_query)
-    if docs:
-        llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
-        for i, doc in enumerate(docs):
-            #! For Version 1 grammars (full in json)
-            llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
-
-            #! For Version 2 grammars (MD)
-            # llm_filter_prompt.append(f"{i}. {doc}")
-        
-        llm_filter_agent = Agent(
-            model="openai:gpt-4o",
-            instrument=True,
-            output_type=List[int],
-            instructions="""
-                Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
-            """
-        )
-        llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-        filtered_doc_ids = llm_filter_response.output
-        filtered_docs = [docs[i] for i in filtered_doc_ids]
-
-        logfire.info(f"LLM filtered docs: {filtered_docs}")
-        return filtered_docs
-    return []
-
-
-@thinking_grammar_agent.tool
-async def docs_search(context: RunContext[RouterAgentDeps], search_query: str) -> list[dict | None]:
-    """
-    Инструмент для извлечения документов на основе запроса пользователя.
-    A tool for extracting documents based on the user's query.
-    Args:
-        context: the call context
-        search_query: запрос для поиска
-    """
-    hyde_agent = Agent(
-        model="openai:gpt-4o-mini",
-        instrument=True,
-        output_type=str,
-        instructions="""
-            Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, который напрямую отвечает на этот вопрос. 
-            Текст должен быть кратким и содержать только необходимую информацию. Уместите ответ в один параграф
-        """)
-
-    hyde_response = await hyde_agent.run(user_prompt=search_query)
-    docs: list[dict] | None = await retrieve_docs_tool(context, hyde_response.output)
-
-    if docs:
-        # llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
-        # for i, doc in enumerate(docs):
-        #     # ! For Version 1 grammars (full in json)
-        #     llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
-        #
-        #     # ! For Version 2 grammars (MD)
-        #     # llm_filter_prompt.append(f"{i}. {doc}")
-        #
-        # llm_filter_agent = Agent(
-        #     model="openai:gpt-4o",
-        #     instrument=True,
-        #     output_type=List[int],
-        #     instructions="""
-        #         Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
-        #     """
-        # )
-        # llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-        # filtered_doc_ids = llm_filter_response.output
-        # filtered_docs = [docs[i] for i in filtered_doc_ids]
-        #
-        # logfire.info(f"LLM filtered docs: {filtered_docs}")
-        # return filtered_docs
-        return docs
-    return []

@@ -49,7 +49,7 @@ class Config(BaseSettings):
     logfire_api_key: str | None = None
     openai_api_key: str | None = None
 
-    embedding_model: str = "text-embedding-3-small"
+    embedding_model: str = "text-embedding-3-large"
     sparse_embedding_model: str = 'Qdrant/bm25'
     reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
 

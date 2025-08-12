@@ -1,10 +1,12 @@
 """
 Stores all necessary tools used by the agent(s).
 """
+from typing import List
 
 import logfire
 from dotenv import load_dotenv
 from pydantic_ai import RunContext
+from pydantic_ai.agent import  Agent
 from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
 
 from src.config.settings import Config
@@ -16,21 +18,23 @@ logfire.configure(token=config.logfire_api_key)
 
 
 async def retrieve_grammars_tool(
-    context: RunContext[RouterAgentDeps], search_query: str, retrieve_top_k: int = 15
+        deps: RouterAgentDeps,
+        search_query: str,
+        retrieve_top_k: int = 15
 ) -> list[GrammarEntryV2] | None:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
     A tool for extracting grammatical constructions based on the user's query.
 
     Args:
-        context: the call context
+        deps: the call context's dependencies
         search_query: запрос для поиска
         retrieve_top_k: количество RETRIEVED результатов
         rerank_top_k: количество результатов ПОСЛЕ reranking-а
     """
     with logfire.span(f"Creating embedding for search_query = {search_query}"):
-        vector_query = await context.deps.openai_client.embeddings.create(model=config.embedding_model, input=search_query)
-        sparse_vector_query = next(context.deps.sparse_embedding.query_embed(search_query))
+        vector_query = await deps.openai_client.embeddings.create(model=config.embedding_model, input=search_query)
+        sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
         sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
 
     assert len(vector_query.data) == 1, (
@@ -59,7 +63,7 @@ async def retrieve_grammars_tool(
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF
     # logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
-    hits = context.deps.qdrant_client.query_points(
+    hits = deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name_v2,
         prefetch=[bm_25_prefetch, dense_prefetch],
         query=FusionQuery(fusion=Fusion.RRF),
@@ -82,50 +86,56 @@ async def retrieve_grammars_tool(
         logfire.info("No documents found.")
         return None
 
-    #TODO Try only reranking if the number of retrieved docs > docs to rerank
-    #
-    # cross_input = []
-    # for doc in docs:
-    #     doc_data = " ".join([doc.content.grammar_name_kr, doc.content.grammar_name_rus])
-    #     cross_input.append([search_query, doc_data])
-    #
-    # scores = context.deps.reranking_model.predict(cross_input)
-    #
-    # # Add cross-encoder scores to docs
-    # for idx in range(len(scores)):
-    #     docs[idx].cross_score = float(scores[idx])
-    #     logfire.info(f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}")
-    #
-    # # Sort by cross-encoder score
-    # reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
-    #
-    # logfire.info(f"Sorted docs: {reranked_docs}")
-    #
-    # result = [doc.content for doc in reranked_docs[:rerank_top_k]]
-    result = [doc.content for doc in docs]
-    return result
+    else:
+        result = [doc.content for doc in docs]
+
+        llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
+
+        for i, doc in enumerate(result):
+            # ! For Version 1 grammars (full in json)
+            llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+
+            # ! For Version 2 grammars (MD)
+            # llm_filter_prompt.append(f"{i}. {doc}")
+
+        llm_filter_agent = Agent(
+            model="openai:gpt-4o",
+            instrument=True,
+            output_type=List[int],
+            instructions="""
+                Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
+            """
+        )
+
+        llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
+        filtered_doc_ids = llm_filter_response.output
+        filtered_docs = [result[i] for i in filtered_doc_ids]
+
+        logfire.info(f"LLM filtered docs: {filtered_docs}")
+        return filtered_docs
 
 
 async def retrieve_docs_tool(
-        context: RunContext[RouterAgentDeps],
+        deps: RouterAgentDeps,
         search_query: str,
         retrieve_top_k: int = 15,
-        rerank_top_k: int = 10
-) -> list[GrammarEntryV2] | None:
+        rerank_top_k: int = 3
+) -> list[dict | None]:
     """
     Инструмент для извлечения документов на основе запроса пользователя.
     A tool for extracting documents based on the user's query.
 
     Args:
-        context: the call context
+        deps: the call dependencies
         search_query: запрос для поиска
         retrieve_top_k: количество RETRIEVED результатов
         rerank_top_k: количество результатов ПОСЛЕ reranking-а
     """
+
     with logfire.span(f"Creating embedding for search_query = {search_query}"):
-        vector_query = await context.deps.openai_client.embeddings.create(model=config.embedding_model,
+        vector_query = await deps.openai_client.embeddings.create(model=config.embedding_model,
                                                                           input=search_query)
-        sparse_vector_query = next(context.deps.sparse_embedding.query_embed(search_query))
+        sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
         sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
 
     assert len(vector_query.data) == 1, (
@@ -153,8 +163,8 @@ async def retrieve_docs_tool(
     )
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF
-    # logfire.info(f"Trying to retrieve from {context.deps.qdrant_client.__dict__}")
-    hits = context.deps.qdrant_client.query_points(
+    # logfire.info(f"Trying to retrieve from {deps.qdrant_client.__dict__}")
+    hits = deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name_rag,
         prefetch=[bm_25_prefetch, dense_prefetch],
         query=FusionQuery(fusion=Fusion.RRF),
@@ -175,23 +185,23 @@ async def retrieve_docs_tool(
 
     if not docs:
         logfire.info("No documents found.")
-        return None
+        return []
 
     cross_input = []
     for doc in docs:
-        doc_data = ". ".join([doc.content["topic"], doc.content["subtopic"], doc.content["content"]])
+        doc_data = doc.content["content"]
         cross_input.append([search_query, doc_data])
 
-    scores = context.deps.reranking_model.predict(cross_input)
+    scores = deps.reranking_model.predict(cross_input)
 
     # Add cross-encoder scores to docs
     for idx in range(len(scores)):
         docs[idx].cross_score = float(scores[idx])
-        logfire.info(f"Document {idx} reranking: {docs[idx].score:.4f} -> {scores[idx]:.4f}")
 
     # Sort by cross-encoder score
     reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
+    logfire.info(f"Original docs: {docs}")
     logfire.info(f"Sorted docs: {reranked_docs}")
 
     result = [doc.content["content"] for doc in reranked_docs[:rerank_top_k]]
