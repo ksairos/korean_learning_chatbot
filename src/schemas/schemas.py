@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Literal, Optional
 
-from fastembed import SparseTextEmbedding
+from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
@@ -71,6 +71,7 @@ class RouterAgentDeps:
     sparse_embedding: SparseTextEmbedding
     reranking_model: CrossEncoder
     session: AsyncSession
+    late_interaction_model: Optional[LateInteractionTextEmbedding] = None
 
 class RouterAgentResult(BaseModel):
     user_message: str

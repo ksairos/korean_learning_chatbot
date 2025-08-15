@@ -36,6 +36,7 @@ class Config(BaseSettings):
     qdrant_collection_name: str = "korean_grammar"
     qdrant_collection_name_v2: str = "korean_grammar_v2"
     qdrant_collection_name_rag: str = "howtostudykorean"
+    qdrant_collection_name_rag_colbert: str = "howtostudykorean_late_interaction"
     qdrant_host: str = "localhost"
     # qdrant_host_docker: str = "qdrant"
     qdrant_port: int = 6333
@@ -52,6 +53,7 @@ class Config(BaseSettings):
     embedding_model: str = "text-embedding-3-large"
     sparse_embedding_model: str = 'Qdrant/bm25'
     reranking_model: str = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
+    late_interaction_model: str = 'jinaai/jina-colbert-v2'
 
     postgres_password: str | None = None
     postgres_user: str | None = None

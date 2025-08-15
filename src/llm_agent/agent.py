@@ -20,7 +20,6 @@ from src.schemas.schemas import (
 load_dotenv()
 
 config = Config()
-logfire.configure(token=config.logfire_api_key)
 
 #IMPORTANT Modify to change the bot language
 language = "ru"
@@ -62,7 +61,7 @@ query_rewriter_agent = Agent(
 )
 
 hyde_agent = Agent(
-        model="openai:gpt-4o-mini",
+        model="openai:gpt-4.1-mini",
         instrument=True,
         instructions="""
             Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, 

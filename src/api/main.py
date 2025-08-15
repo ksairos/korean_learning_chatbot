@@ -1,9 +1,10 @@
 import logfire
+import os
 
 from aiogram import Bot
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.params import Depends
-from fastembed import SparseTextEmbedding
+from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from sentence_transformers import CrossEncoder
 from openai import AsyncOpenAI
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
@@ -21,13 +22,15 @@ from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,
     TelegramMessage,
-    GrammarEntryV2
+    GrammarEntryV2, RetrievedDoc
 )
 
 app = FastAPI()
 
 config = Config()
 bot = Bot(token=config.bot_token)
+
+cache_directory = os.path.expanduser("~/.cache/huggingface/hub")
 
 openai_client = AsyncOpenAI()
 # TODO: Add async support using AsyncQdrantClient
@@ -38,6 +41,11 @@ qdrant_client = QdrantClient(
     port=config.qdrant_port,
 )
 
+logfire.configure(token=config.logfire_api_key, environment="local")
+logfire.instrument_openai(openai_client)
+logfire.instrument_fastapi(app)
+logfire.instrument_pydantic_ai()
+
 # INFO: Can be used with the remote cluster
 # qdrant_client = QdrantClient(
 #     url=config.qdrant_host_cluster,
@@ -46,23 +54,34 @@ qdrant_client = QdrantClient(
 # )
 
 # Set up in compose using model_cache volume
+# FIXME: Check out the cache folder location. Substitute with another option, as it is now not a volume in the compose
+# FIXME: Use 3_create_qdrant_rag_collection.ipynb as a reference
 try:
     sparse_embedding = SparseTextEmbedding(
-        model_name=config.sparse_embedding_model, cache_dir="/root/.cache/huggingface/hub"
+        model_name=config.sparse_embedding_model,
+        cache_dir=cache_directory,
+        local_files_only=True
     )
 except:
     sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model)
 
 try:
     reranking_model = CrossEncoder(
-        config.reranking_model, cache_folder="/root/.cache/huggingface/hub"
+        config.reranking_model,
+        cache_folder=cache_directory,
+        local_files_only=True
     )
 except:
     reranking_model = CrossEncoder(config.reranking_model)
 
-logfire.configure(token=config.logfire_api_key)
-logfire.instrument_openai(openai_client)
-logfire.instrument_fastapi(app)
+try:
+    late_interaction_model = LateInteractionTextEmbedding(
+        config.late_interaction_model,
+        cache_dir=cache_directory,
+        local_files_only=True
+    )
+except Exception as e:
+    late_interaction_model = LateInteractionTextEmbedding(config.late_interaction_model)
 
 
 @app.get("/")
@@ -149,7 +168,10 @@ async def process_message(
     if router_agent_response.output.message_type == "thinking_grammar_answer":
 
         hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
-        docs: list[dict | None] = await retrieve_docs_tool(deps, hyde_response.output)
+        # FIXME: Add reranking method
+        retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)
+
+        docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
@@ -191,12 +213,12 @@ async def process_message(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@app.post("/evaluate")
-async def evaluate_rag(
+@app.post("/evaluate/test1")
+async def evaluate_rag_1(
     message: TelegramMessage,
     session: AsyncSession = Depends(get_db),
 ):
-    local_logfire = logfire.with_tags(str(message.user.user_id))
+    local_logfire = logfire.with_tags(str(message.user.user_id), "evaluation", "test1")
     local_logfire.info(f'User message "{message}"')
 
     allowed_users = await get_user_ids(session)
@@ -213,9 +235,15 @@ async def evaluate_rag(
     )
 
     hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
-    docs: list[dict | None] = await retrieve_docs_tool(deps, hyde_response.output)
+    retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(
+        deps,
+        hyde_response.output,
+        search_strategy="hybrid",
+        rerank_strategy="cross"
+    )
+    docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
-    local_logfire.info(f"Retrieved docs: {docs}")
+    local_logfire.info(f"Retrieved docs: {docs}", _tags=["Evaluation"])
 
     thinking_grammar_response = await thinking_grammar_agent.run(
         user_prompt=message.user_prompt,
@@ -225,6 +253,50 @@ async def evaluate_rag(
 
     local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
 
-    return {"llm_response": thinking_grammar_response.output, "retrieved_docs": docs}
+    return {"llm_response": thinking_grammar_response.output, "retrieved_docs": retrieved_docs}
 
     # return {"llm_response": thinking_grammar_response.new_messages_json().decode()}
+
+
+@app.post("/evaluate/test2")
+async def evaluate_rag_2(
+    message: TelegramMessage,
+    session: AsyncSession = Depends(get_db),
+):
+    local_logfire = logfire.with_tags(str(message.user.user_id), "evaluation", "test2")
+    local_logfire.info(f'User message: "{message}"')
+
+    allowed_users = await get_user_ids(session)
+    if message.user.user_id not in allowed_users:
+        raise HTTPException(status_code=403,
+                            detail="User not registered")
+
+    deps = RouterAgentDeps(
+        openai_client=openai_client,
+        qdrant_client=qdrant_client,
+        sparse_embedding=sparse_embedding,
+        reranking_model=reranking_model,
+        late_interaction_model=late_interaction_model,
+        session=session,
+    )
+
+    hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
+    retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(
+        deps,
+        hyde_response.output,
+        search_strategy="hybrid",
+        rerank_strategy="colbert"
+    )
+    docs = [doc.content["content"] for doc in retrieved_docs if doc]
+
+    local_logfire.info(f"Retrieved docs: {docs}", _tags=["Evaluation"])
+
+    thinking_grammar_response = await thinking_grammar_agent.run(
+        user_prompt=message.user_prompt,
+        deps=docs,
+        usage_limits=UsageLimits(request_limit=5),
+    )
+
+    local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
+
+    return {"llm_response": thinking_grammar_response.output, "retrieved_docs": retrieved_docs}
