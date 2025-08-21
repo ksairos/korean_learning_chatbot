@@ -16,7 +16,7 @@ class Base(DeclarativeBase):
     pass
 
 # Async engine and session factory
-engine = create_async_engine(config.asyncpg_url.unicode_string())
+engine = create_async_engine(config.asyncpg_url.unicode_string(), pool_size=10, max_overflow=20, pool_timeout=60)
 async_session = async_sessionmaker(autoflush=False, bind=engine, expire_on_commit=False)
 
 # Sync engine and session factory for scripts and testing

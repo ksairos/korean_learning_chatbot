@@ -116,10 +116,10 @@ async def retrieve_grammars_tool(
 async def retrieve_docs_tool(
         deps: RouterAgentDeps,
         search_query: str,
-        retrieve_top_k: int = 15,
-        rerank_top_k: int = 3,
+        retrieve_top_k: int = 50,
+        rerank_top_k: int = 5,
         search_strategy: Literal["bm25", "dense", "hybrid"] = "hybrid",
-        rerank_strategy: Literal["cross", "colbert", "none"] = "cross",
+        rerank_strategy: Literal["cross", "colbert", "none"] = "colbert",
 ) -> list[RetrievedDoc | None]:
     """
     Инструмент для извлечения документов на основе запроса пользователя.
@@ -158,6 +158,8 @@ async def retrieve_docs_tool(
             sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
             sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
 
+            local_logfire.info(f"Query embedded with sparse embeddings")
+
             bm_25_prefetch = Prefetch(
                 query=sparse_vector_query,
                 using=config.sparse_embedding_model,
@@ -165,52 +167,60 @@ async def retrieve_docs_tool(
                 score_threshold=bm_threshold,
             )
 
-        if search_strategy == "hybrid" and rerank_strategy == "colbert":
+        if rerank_strategy == "colbert":
             late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
-
-        local_logfire.info(f"Query embedded with OpenAI and sparse embeddings")
+            local_logfire.info(f"Query embedded with ColBERT")
 
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF
     # local_logfire.info(f"Trying to retrieve from {deps.qdrant_client.__dict__}")
 
-    with local_logfire.span("Retrieving from Qdrant"):
+    with local_logfire.span(f"qdrant_retrieval_{search_strategy}_{rerank_strategy}"):
 
         if search_strategy == "hybrid":
-            if rerank_strategy == "cross":
+            if rerank_strategy == "cross" or rerank_strategy == "none":
                 hits = deps.qdrant_client.query_points(
                     collection_name=config.qdrant_collection_name_rag,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=FusionQuery(fusion=Fusion.RRF),
+                    limit=retrieve_top_k,
                     with_payload=True,
                 ).points
                 local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
             elif rerank_strategy == "colbert":
                 hits = deps.qdrant_client.query_points(
-                    collection_name=config.qdrant_collection_name_rag_colbert,
+                    collection_name=config.qdrant_collection_name_rag,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=late_vector_query,
                     using=config.late_interaction_model,
                     limit=rerank_top_k,
                     with_payload=True,
                 ).points
+                local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-        elif search_strategy == "bm25":
+        elif search_strategy == "bm25" and rerank_strategy == "none":
             hits = deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_rag,
-                prefetch=[bm_25_prefetch],
                 query=sparse_vector_query,
+                using=config.sparse_embedding_model,
                 with_payload=True,
+                limit=retrieve_top_k,
             ).points
+            local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-        elif search_strategy == "dense":
+        elif search_strategy == "dense" and rerank_strategy == "none":
             hits = deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_rag,
-                prefetch=[dense_prefetch],
+                using=config.embedding_model,
                 query=vector_query,
                 with_payload=True,
+                limit=retrieve_top_k,
             ).points
+            local_logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+        else:
+            local_logfire.error(f"Unsupported search strategy <{search_strategy}> or Rerank strategy <{rerank_strategy}>")
 
 
     # Convert to schema objects
@@ -245,7 +255,7 @@ async def retrieve_docs_tool(
         reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
 
         local_logfire.info(f"Original docs: {docs}")
-        local_logfire.info(f"Sorted docs: {reranked_docs}")
+        local_logfire.info(f"Cross Encoder Sorted docs: {reranked_docs}")
 
         try:
             result = reranked_docs[:rerank_top_k]
@@ -254,5 +264,11 @@ async def retrieve_docs_tool(
         except:
             return reranked_docs
 
-    else:
+    if rerank_strategy == "colbert":
+        local_logfire.info(f"Late Interaction Reranked docs: {docs}")
         return docs
+
+    else:
+        local_logfire.info(f"Docs without reranking: {docs}")
+        return docs[:rerank_top_k]
+

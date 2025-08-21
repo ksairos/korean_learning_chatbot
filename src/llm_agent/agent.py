@@ -8,6 +8,7 @@ from src.config.prompts import prompts
 from src.config.settings import Config
 
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.settings import ModelSettings
 
 
 from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
@@ -35,6 +36,7 @@ router_agent = Agent(
     model="openai:gpt-4.1",
     instrument=True,
     output_type=RouterAgentResult,
+    model_settings=ModelSettings(temperature=0.0),
     instructions="""
         You're the routing agent for a multi-agent assistant. Classify the user's message and choose the appropriate agent to handle the request:
         1. The user's request can be answered with the comprehensive explanation of a specific Korean grammar. Set message_type=direct_grammar_search
@@ -73,6 +75,7 @@ hyde_agent = Agent(
 thinking_grammar_agent = Agent(
     model="openai:gpt-4.1-mini",
     instrument=True,
+    model_settings=ModelSettings(temperature=0.8),
     instructions="""
         Ты - профессиональный преподаватель корейского языка. Основываясь на предоставленной информации RETRIEVED DOCS, 
         сформируйте краткий и точный ответ на запрос пользователя. При необходимости используйте примеры из этой же информации. 

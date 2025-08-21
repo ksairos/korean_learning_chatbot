@@ -13,6 +13,7 @@ from pydantic_ai.agent import AgentRunResult
 from qdrant_client import QdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
@@ -45,6 +46,8 @@ logfire.configure(token=config.logfire_api_key, environment="local")
 logfire.instrument_openai(openai_client)
 logfire.instrument_fastapi(app)
 logfire.instrument_pydantic_ai()
+
+app.include_router(evaluation.router)
 
 # INFO: Can be used with the remote cluster
 # qdrant_client = QdrantClient(
@@ -211,92 +214,3 @@ async def process_message(
     else:
         local_logfire.error(f"Unknown message type: {router_agent_response.output.message_type}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-
-@app.post("/evaluate/test1")
-async def evaluate_rag_1(
-    message: TelegramMessage,
-    session: AsyncSession = Depends(get_db),
-):
-    local_logfire = logfire.with_tags(str(message.user.user_id), "evaluation", "test1")
-    local_logfire.info(f'User message "{message}"')
-
-    allowed_users = await get_user_ids(session)
-    if message.user.user_id not in allowed_users:
-        raise HTTPException(status_code=403,
-                            detail="User not registered")
-
-    deps = RouterAgentDeps(
-        openai_client=openai_client,
-        qdrant_client=qdrant_client,
-        sparse_embedding=sparse_embedding,
-        reranking_model=reranking_model,
-        session=session,
-    )
-
-    hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
-    retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(
-        deps,
-        hyde_response.output,
-        search_strategy="hybrid",
-        rerank_strategy="cross"
-    )
-    docs = [doc.content["content"] for doc in retrieved_docs if doc]
-
-    local_logfire.info(f"Retrieved docs: {docs}", _tags=["Evaluation"])
-
-    thinking_grammar_response = await thinking_grammar_agent.run(
-        user_prompt=message.user_prompt,
-        deps=docs,
-        usage_limits=UsageLimits(request_limit=5),
-    )
-
-    local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
-
-    return {"llm_response": thinking_grammar_response.output, "retrieved_docs": retrieved_docs}
-
-    # return {"llm_response": thinking_grammar_response.new_messages_json().decode()}
-
-
-@app.post("/evaluate/test2")
-async def evaluate_rag_2(
-    message: TelegramMessage,
-    session: AsyncSession = Depends(get_db),
-):
-    local_logfire = logfire.with_tags(str(message.user.user_id), "evaluation", "test2")
-    local_logfire.info(f'User message: "{message}"')
-
-    allowed_users = await get_user_ids(session)
-    if message.user.user_id not in allowed_users:
-        raise HTTPException(status_code=403,
-                            detail="User not registered")
-
-    deps = RouterAgentDeps(
-        openai_client=openai_client,
-        qdrant_client=qdrant_client,
-        sparse_embedding=sparse_embedding,
-        reranking_model=reranking_model,
-        late_interaction_model=late_interaction_model,
-        session=session,
-    )
-
-    hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
-    retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(
-        deps,
-        hyde_response.output,
-        search_strategy="hybrid",
-        rerank_strategy="colbert"
-    )
-    docs = [doc.content["content"] for doc in retrieved_docs if doc]
-
-    local_logfire.info(f"Retrieved docs: {docs}", _tags=["Evaluation"])
-
-    thinking_grammar_response = await thinking_grammar_agent.run(
-        user_prompt=message.user_prompt,
-        deps=docs,
-        usage_limits=UsageLimits(request_limit=5),
-    )
-
-    local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
-
-    return {"llm_response": thinking_grammar_response.output, "retrieved_docs": retrieved_docs}
