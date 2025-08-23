@@ -63,29 +63,32 @@ query_rewriter_agent = Agent(
 )
 
 hyde_agent = Agent(
-        model="openai:gpt-4.1-mini",
+        model="openai:gpt-5",
         instrument=True,
         instructions="""
             Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, 
             который напрямую отвечает на этот вопрос. Текст должен быть кратким и содержать только необходимую информацию. 
-            Уместите ответ в 1-2 предложениях
+            Уместите ответ в 2-3 предложениях
         """
 )
 
+# FIXME: Поменять промпт на "Если подходящих документов нет, постарайтесь ответить на запрос пользователя самостоятельно."
 thinking_grammar_agent = Agent(
-    model="openai:gpt-4.1-mini",
+    model="openai:gpt-5",
     instrument=True,
-    model_settings=ModelSettings(temperature=0.8),
     instructions="""
-        Ты - профессиональный преподаватель корейского языка. Основываясь на предоставленной информации RETRIEVED DOCS, 
-        сформируйте краткий и точный ответ на запрос пользователя. При необходимости используйте примеры из этой же информации. 
-        Если подходящих документов нет, постарайтесь ответить на запрос пользователя самостоятельно.
+        Ты - профессиональный и преподаватель корейского языка. Основываясь на предоставленной информации RETRIEVED DOCS, 
+        сформируйте краткий, четкий и точный ответ на запрос пользователя. При необходимости используйте примеры из этой же информации. 
+        Не пытайтесь отвечать самостоятельно, если RETRIEVED DOCS не предоставляют данных, скажите, что вы не знаете ответа
     """
 )
 
 @thinking_grammar_agent.system_prompt
-def add_docs(ctx: RunContext[list[dict | None]]) -> str:
-    return f"RETRIEVED DOCS: {ctx.deps}"
+def add_docs(ctx: RunContext[list]) -> str:
+    docs = ["RETRIEVED DOCS:"]
+    for i, doc in enumerate(ctx.deps):
+        docs.append(f"{i}. {doc.content["content"]}")
+    return "\n\n".join(docs)
 
 
 system_agent = Agent(

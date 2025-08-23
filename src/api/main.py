@@ -123,7 +123,7 @@ async def process_message(
         user_prompt=message.user_prompt,
         usage_limits=UsageLimits(request_limit=5),
         output_type=RouterAgentResult,
-        # message_history=message_history,
+        message_history=message_history,
     )
 
     router_answer = f"Сообщение: {message.user_prompt}, тип: {router_agent_response.output.message_type}"
@@ -136,8 +136,8 @@ async def process_message(
         # TODO: Uncomment message history
         query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
-            usage_limits=UsageLimits(request_limit=5)
-            # message_history=message_history,
+            usage_limits=UsageLimits(request_limit=5),
+            message_history=message_history,
         )
         local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
         
@@ -162,28 +162,35 @@ async def process_message(
                 return {"llm_response": retrieved_grammars, "mode": mode}
 
             # Update chat history with new messages
-            new_messages = query_rewriter_response.new_messages()
-            background_tasks.add_task(
-                update_message_history, session, message.user, new_messages
-            )
-            local_logfire.info(f"New Messages: {new_messages}")
+            with local_logfire.span("update_message_history"):
+                new_messages = query_rewriter_response.new_messages()
+                background_tasks.add_task(update_message_history, session, message.user, new_messages)
+                local_logfire.info(f"new_messages: {new_messages}")
 
     if router_agent_response.output.message_type == "thinking_grammar_answer":
 
+        # HyDE
         hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
-        # FIXME: Add reranking method
-        retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)
 
+        # Retrieval
+        retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)
         docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
+        # Generation
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
             deps=docs,
             usage_limits=UsageLimits(request_limit=5),
             output_type=str,
-            # message_history=message_history,
+            message_history=message_history,
         )
         local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
+
+        # Update chat history with new messages
+        with local_logfire.span("update_message_history"):
+            new_messages = thinking_grammar_response.new_messages()
+            background_tasks.add_task(update_message_history, session, message.user, new_messages)
+            local_logfire.info(f"new_messages: {new_messages}")
 
         # "mode" will be "no_grammar" only if message type was converted from direct_grammar_search
         if not mode == "no_grammar":
@@ -191,21 +198,19 @@ async def process_message(
 
         return {"llm_response": thinking_grammar_response.output, "mode": mode}
 
-        # TODO don't forget to update chat history with new messages
-        # new_messages = thinking_agent_response.new_messages()
-        # background_tasks.add_task(
-        #     update_message_history, session, message.user.chat_id, new_messages
-        # )
-        # local_logfire.info(f"New Messages: {new_messages}")
-
     if router_agent_response.output.message_type == "casual_answer":
         casual_response = await system_agent.run(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
             output_type=str,
-            # message_history=message_history,
+            message_history=message_history,
         )
         local_logfire.info("System agent response: {response}", response=casual_response.output)
+
+        with local_logfire.span("update_message_history"):
+            new_messages = casual_response.new_messages()
+            background_tasks.add_task(update_message_history, session, message.user, new_messages)
+            local_logfire.info(f"new_messages: {new_messages}")
 
         mode = "casual_answer"
         return {"llm_response": casual_response.output, "mode": mode}

@@ -269,6 +269,7 @@ async def retrieve_docs_tool(
         return docs
 
     else:
+
         local_logfire.info(f"Docs without reranking: {docs}")
         return docs[:rerank_top_k]
 
