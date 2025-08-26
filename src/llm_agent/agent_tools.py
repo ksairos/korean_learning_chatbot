@@ -239,22 +239,27 @@ async def retrieve_docs_tool(
 
     if rerank_strategy == "cross":
 
-        cross_input = []
+        local_logfire.info(f"Original docs: {docs}")
+
+        docs_content = []
         for doc in docs:
             doc_data = doc.content["content"]
-            cross_input.append([search_query, doc_data])
+            docs_content.append(doc_data)
 
         with local_logfire.span("Reranking with cross-encoder"):
-            scores = deps.reranking_model.predict(cross_input)
+            new_scores = deps.reranking_model.rerank(search_query, docs_content)
+            ranking = [(i, score) for i, score in enumerate(new_scores)]
+            local_logfire.info(f"Rankings: {ranking}")
 
-        # Add cross-encoder scores to docs
-        for idx in range(len(scores)):
-            docs[idx].cross_score = float(scores[idx])
+            combined = zip(docs, ranking)
+            sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
 
-        # Sort by cross-encoder score
-        reranked_docs = sorted(docs, key=lambda x: x.cross_score, reverse=True)
+            reranked_docs: List[RetrievedDoc] = []
+            for doc, (rank, score) in sorted_combined:
+                doc.cross_score = score
+                reranked_docs.append(doc)
 
-        local_logfire.info(f"Original docs: {docs}")
+
         local_logfire.info(f"Cross Encoder Sorted docs: {reranked_docs}")
 
         try:

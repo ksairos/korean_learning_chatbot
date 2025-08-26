@@ -4,8 +4,8 @@ import os
 from aiogram import Bot
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.params import Depends
-from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
-from sentence_transformers import CrossEncoder
+from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding, TextEmbedding
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 from openai import AsyncOpenAI
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 from pydantic_ai.usage import UsageLimits
@@ -69,13 +69,13 @@ except:
     sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model)
 
 try:
-    reranking_model = CrossEncoder(
-        config.reranking_model,
-        cache_folder=cache_directory,
-        local_files_only=True
+    reranking_model = TextCrossEncoder(
+        model_name=config.reranking_model,
+        cache_dir=cache_directory,
+        cuda=False # TODO: change to True for prod
     )
 except:
-    reranking_model = CrossEncoder(config.reranking_model)
+    reranking_model = TextCrossEncoder(config.reranking_model)
 
 try:
     late_interaction_model = LateInteractionTextEmbedding(

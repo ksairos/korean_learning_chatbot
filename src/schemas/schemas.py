@@ -5,8 +5,10 @@ from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
-from sentence_transformers import CrossEncoder
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastembed.rerank.cross_encoder import TextCrossEncoder
+
 
 
 class GrammarEntry(BaseModel):
@@ -69,9 +71,9 @@ class RouterAgentDeps:
     # TODO: Add async support using AsyncQdrantClient
     qdrant_client: QdrantClient
     sparse_embedding: SparseTextEmbedding
-    reranking_model: CrossEncoder
+    reranking_model: TextCrossEncoder
     session: AsyncSession
-    late_interaction_model: Optional[LateInteractionTextEmbedding] = None
+    late_interaction_model: Optional[LateInteractionTextEmbedding]
 
 class RouterAgentResult(BaseModel):
     user_message: str

@@ -46,38 +46,37 @@ class RagEvaluationStrategy:
                 retrieve_top_k=self.retrieve_top_k
             )
         
-        # docs = [doc.content["content"] for doc in retrieved_docs if doc]
-        # local_logfire.info(f"Retrieved {len(docs)} docs")
+        local_logfire.info(f"Retrieved {len(retrieved_docs)} docs")
 
-        llm_filter_prompt = [f"USER_QUERY: '{message.user_prompt}'\n\nCONTEXT: "]
-
-        for i, doc in enumerate(retrieved_docs):
-            llm_filter_prompt.append(f"{i}. {doc.content["content"]}")
-
-        local_logfire.info(f"LLM Filter Prompt{llm_filter_prompt}")
-
-        llm_filter_agent = Agent(
-            model="gpt-5",
-            instrument=True,
-            output_type=List[int],
-            instructions=
-            """Analyze the USER QUERY and select appropriate search results from the CONTEXT,
-            that can directly or indirectly be used to respond to the USER QUERY. 
-            Output their index, sorted by the relevance to the USER QUERY"""
-        )
-
-        llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-        filtered_doc_ids = llm_filter_response.output
-        filtered_docs = [retrieved_docs[i] for i in filtered_doc_ids]
-
-        logfire.info(f"LLM filtered docs: {filtered_docs}")
-
-        if len(filtered_docs) > 5:
-            filtered_docs = filtered_docs[:5]
+        # llm_filter_prompt = [f"USER_QUERY: '{message.user_prompt}'\n\nCONTEXT: "]
+        #
+        # for i, doc in enumerate(retrieved_docs):
+        #     llm_filter_prompt.append(f"{i}. {doc.content["content"]}")
+        #
+        # local_logfire.info(f"LLM Filter Prompt{llm_filter_prompt}")
+        #
+        # llm_filter_agent = Agent(
+        #     model="gpt-5",
+        #     instrument=True,
+        #     output_type=List[int],
+        #     instructions=
+        #     """Analyze the USER QUERY and select appropriate search results from the CONTEXT,
+        #     that can directly or indirectly be used to respond to the USER QUERY.
+        #     Output their index, sorted by the relevance to the USER QUERY"""
+        # )
+        #
+        # llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
+        # filtered_doc_ids = llm_filter_response.output
+        # filtered_docs = [retrieved_docs[i] for i in filtered_doc_ids]
+        #
+        # logfire.info(f"LLM filtered docs: {filtered_docs}")
+        #
+        # if len(filtered_docs) > 5:
+        #     filtered_docs = filtered_docs[:5]
 
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
-            deps=filtered_docs,
+            deps=retrieved_docs,
             usage_limits=UsageLimits(request_limit=5),
         )
 
@@ -86,7 +85,7 @@ class RagEvaluationStrategy:
         
         return {
             "llm_response": thinking_grammar_response.output,
-            "retrieved_docs": filtered_docs,
+            "retrieved_docs": retrieved_docs,
         }
 
 # retrieve_top_k=10
