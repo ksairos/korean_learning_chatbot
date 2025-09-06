@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
     #     """
     #     Constructs and returns a SQLAlchemy URL for this database configuration.
     #     """
-    #     # TODO: If you're using SQLAlchemy, move the import to the top of the file!
+    #     # IMPORTANT: If you're using SQLAlchemy, move the import to the top of the file!
     #     from sqlalchemy.engine.url import URL
     #
     #     if not host:
@@ -35,8 +35,12 @@ class Config(BaseSettings):
 
     qdrant_collection_name: str = "korean_grammar"
     qdrant_collection_name_v2: str = "korean_grammar_v2"
+
     qdrant_collection_name_rag: str = "howtostudykorean"
-    qdrant_collection_name_rag_colbert: str = "howtostudykorean_extended"
+    qdrant_collection_name_rag_small: str = "howtostudykorean_small"
+    qdrant_collection_name_rag_extended: str = "howtostudykorean_extended"
+    qdrant_collection_name_rag_final: str = "howtostudykorean_extended_small"
+
     qdrant_host: str = "localhost"
     # qdrant_host_docker: str = "qdrant"
     qdrant_port: int = 6333
@@ -106,7 +110,7 @@ class Config(BaseSettings):
     # db: DbConfig = DbConfig()
     # redis: Optional[RedisConfig] = RedisConfig()
 
-#TODO Implement redis if needed
+#INFO Implement redis if needed
 
 # @dataclass
 # class RedisConfig:

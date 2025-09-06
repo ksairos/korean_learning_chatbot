@@ -28,7 +28,6 @@ async def retrieve_grammars_tool(
         deps: the call context's dependencies
         search_query: запрос для поиска
         retrieve_top_k: количество RETRIEVED результатов
-        rerank_top_k: количество результатов ПОСЛЕ reranking-а
     """
 
     with logfire.span("Creating embedding for search_query = {search_query}", search_query=search_query):
@@ -178,9 +177,9 @@ async def retrieve_docs_tool(
     with local_logfire.span(f"qdrant_retrieval_{search_strategy}_{rerank_strategy}"):
 
         if search_strategy == "hybrid":
-            if rerank_strategy == "cross" or rerank_strategy == "none":
+            if rerank_strategy in ["cross", "none", "jina"]:
                 hits = deps.qdrant_client.query_points(
-                    collection_name=config.qdrant_collection_name_rag,
+                    collection_name=config.qdrant_collection_name_rag_small,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=FusionQuery(fusion=Fusion.RRF),
                     limit=retrieve_top_k,
@@ -190,7 +189,7 @@ async def retrieve_docs_tool(
 
             elif rerank_strategy == "colbert":
                 hits = deps.qdrant_client.query_points(
-                    collection_name=config.qdrant_collection_name_rag,
+                    collection_name=config.qdrant_collection_name_rag_small,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=late_vector_query,
                     using=config.late_interaction_model,
@@ -201,7 +200,7 @@ async def retrieve_docs_tool(
 
         elif search_strategy == "bm25" and rerank_strategy == "none":
             hits = deps.qdrant_client.query_points(
-                collection_name=config.qdrant_collection_name_rag,
+                collection_name=config.qdrant_collection_name_rag_small,
                 query=sparse_vector_query,
                 using=config.sparse_embedding_model,
                 with_payload=True,
@@ -211,7 +210,7 @@ async def retrieve_docs_tool(
 
         elif search_strategy == "dense" and rerank_strategy == "none":
             hits = deps.qdrant_client.query_points(
-                collection_name=config.qdrant_collection_name_rag,
+                collection_name=config.qdrant_collection_name_rag_small,
                 using=config.embedding_model,
                 query=vector_query,
                 with_payload=True,
@@ -237,44 +236,43 @@ async def retrieve_docs_tool(
         local_logfire.info("No documents found.")
         return []
 
-    if rerank_strategy == "cross":
-
-        local_logfire.info(f"Original docs: {docs}")
-
-        docs_content = []
-        for doc in docs:
-            doc_data = doc.content["content"]
-            docs_content.append(doc_data)
-
-        with local_logfire.span("Reranking with cross-encoder"):
-            new_scores = deps.reranking_model.rerank(search_query, docs_content)
-            ranking = [(i, score) for i, score in enumerate(new_scores)]
-            local_logfire.info(f"Rankings: {ranking}")
-
-            combined = zip(docs, ranking)
-            sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
-
-            reranked_docs: List[RetrievedDoc] = []
-            for doc, (rank, score) in sorted_combined:
-                doc.cross_score = score
-                reranked_docs.append(doc)
-
-
-        local_logfire.info(f"Cross Encoder Sorted docs: {reranked_docs}")
-
-        try:
-            result = reranked_docs[:rerank_top_k]
-            return result
-
-        except:
-            return reranked_docs
+    # if rerank_strategy == "cross":
+    #
+    #     local_logfire.info(f"Original docs: {docs}")
+    #
+    #     docs_content = []
+    #     for doc in docs:
+    #         doc_data = doc.content["content"]
+    #         docs_content.append(doc_data)
+    #
+    #     with local_logfire.span("Reranking with cross-encoder"):
+    #         new_scores = deps.reranking_model.rerank(search_query, docs_content)
+    #         ranking = [(i, score) for i, score in enumerate(new_scores)]
+    #         local_logfire.info(f"Rankings: {ranking}")
+    #
+    #         combined = zip(docs, ranking)
+    #         sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
+    #
+    #         reranked_docs: List[RetrievedDoc] = []
+    #         for doc, (rank, score) in sorted_combined:
+    #             doc.cross_score = score
+    #             reranked_docs.append(doc)
+    #
+    #
+    #     local_logfire.info(f"Cross Encoder Sorted docs: {reranked_docs}")
+    #
+    #     try:
+    #         result = reranked_docs[:rerank_top_k]
+    #         return result
+    #
+    #     except:
+    #         return reranked_docs
 
     if rerank_strategy == "colbert":
         local_logfire.info(f"Late Interaction Reranked docs: {docs}")
         return docs
 
     else:
-
         local_logfire.info(f"Docs without reranking: {docs}")
         return docs[:rerank_top_k]
 

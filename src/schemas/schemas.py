@@ -4,7 +4,7 @@ from typing import Dict, List, Literal, Optional
 from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
 from pydantic import BaseModel
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, AsyncQdrantClient
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastembed.rerank.cross_encoder import TextCrossEncoder
@@ -19,16 +19,12 @@ class GrammarEntry(BaseModel):
     usage_form: str
     examples: List[Dict[str, str]]
     notes: Optional[List[str]]
-    # TODO: Add irregular verbs examples
-    # with_irregular_verbs: Optional[List[str]]
-    
 
 class GrammarEntryV2(BaseModel):
     grammar_name_kr: str
     grammar_name_rus: str
     level: Literal[1, 2, 3, 4, 5, 6]
     content: str
-    # TODO: set appropriate list type
     related_grammars: list
 
 class RetrievedGrammar(BaseModel):
@@ -68,12 +64,11 @@ class TelegramMessage(BaseModel):
 @dataclass
 class RouterAgentDeps:
     openai_client: AsyncOpenAI
-    # TODO: Add async support using AsyncQdrantClient
-    qdrant_client: QdrantClient
+    qdrant_client: QdrantClient | AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
-    reranking_model: TextCrossEncoder
+    # reranking_model: TextCrossEncoder
     session: AsyncSession
-    late_interaction_model: Optional[LateInteractionTextEmbedding]
+    late_interaction_model: Optional[LateInteractionTextEmbedding] = None
 
 class RouterAgentResult(BaseModel):
     user_message: str

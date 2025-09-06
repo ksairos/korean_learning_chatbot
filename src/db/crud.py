@@ -1,5 +1,5 @@
 import logfire
-from sqlalchemy import desc, select
+from sqlalchemy import desc, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelRequest, ModelResponse
 
@@ -72,7 +72,9 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
 
 
 async def update_message_history(
-    session: AsyncSession, user: TelegramUser, new_messages: list[ModelRequest | ModelResponse] | bytes
+        session: AsyncSession,
+        user: TelegramUser,
+        new_messages: list[ModelRequest | ModelResponse] | bytes
 ) -> None:
     """
     Update message history by using chat ID with new messages
@@ -116,6 +118,19 @@ async def update_message_history(
     except Exception as e:
         await session.rollback()
         logfire.error(f"An unexpected error occurred adding message to chat {user.chat_id}: {e}")
+
+
+async def delete_chat_history(
+        session: AsyncSession,
+        user: TelegramUser):
+    """Delete all message history for a specific chat ID."""
+
+    result = await session.execute(
+        delete(MessageBlobModel).where(MessageBlobModel.chat_id == user.chat_id)
+    )
+    deleted_count = result.rowcount
+
+    return deleted_count
 
 
 async def get_user_ids(session: AsyncSession):

@@ -111,8 +111,6 @@ def parse_entry_v1(text):
             match = re.match(r"^\d+\.\s*(.*)$", line)
             if match:
                 notes.append(match.group(1).strip())
-
-        # TODO: Add irregular verbs examples
         i += 1
 
     # Clean up extra spaces.

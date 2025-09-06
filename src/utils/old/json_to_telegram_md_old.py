@@ -2,8 +2,6 @@
 # import time
 
 def grammar_entry_to_markdown(entry: dict) -> str:
-    # TODO Добавить использование с нерегулярными глаголами
-
     lines = []
     # Emphasize all Korean words
     # pattern = r'([가-힣]+)'

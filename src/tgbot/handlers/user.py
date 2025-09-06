@@ -14,12 +14,13 @@ async def user_start(message: Message):
     """Handle the /start command"""
     await message.reply(
         telegram_format(
-            "Приветствую! Я - LazyHangeul, твой помощник в изучении корейской грамматики.\n"
-            "Какую грамматику тебе объяснить?\n\n"
+            "Приветствую! Я - LazyHangeul, твой ИИ ассистент в изучении корейской грамматики на базе OpenAI.\n"
+            "Помогу в поиске нужной грамматики или отвечу на вопросы связанные с ней\n\n"
+            "В данный момент чатбот находится в разработке, чтобы получить доступ, обратитесь автору для получения доступа. \n\nТГ: @ksairosdormu"
         )
     )
 
-    # TODO Uncomment to turn on user adding with /start
+    # IMPORTANT Uncomment to turn on user adding with /start
 
     # user = TelegramUser(
     #     user_id=message.from_user.id,

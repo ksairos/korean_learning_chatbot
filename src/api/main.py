@@ -10,7 +10,7 @@ from openai import AsyncOpenAI
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.agent import AgentRunResult
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.routers import evaluation
@@ -35,7 +35,7 @@ cache_directory = os.path.expanduser("~/.cache/huggingface/hub")
 
 openai_client = AsyncOpenAI()
 # TODO: Add async support using AsyncQdrantClient
-qdrant_client = QdrantClient(
+qdrant_client = AsyncQdrantClient(
     # IMPORTANT: Use qdrant_host_docker if running in docker
     # host=config.qdrant_host_docker,
     host=config.qdrant_host,
@@ -68,14 +68,14 @@ try:
 except:
     sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model)
 
-try:
-    reranking_model = TextCrossEncoder(
-        model_name=config.reranking_model,
-        cache_dir=cache_directory,
-        cuda=False # TODO: change to True for prod
-    )
-except:
-    reranking_model = TextCrossEncoder(config.reranking_model)
+# try:
+#     reranking_model = TextCrossEncoder(
+#         model_name=config.reranking_model,
+#         cache_dir=cache_directory,
+#         cuda=False # TODO: change to True for prod
+#     )
+# except:
+#     reranking_model = TextCrossEncoder(config.reranking_model)
 
 try:
     late_interaction_model = LateInteractionTextEmbedding(
@@ -91,7 +91,30 @@ except Exception as e:
 async def root():
     return {"message": "API"}
 
+
 @app.post("/invoke")
+async def without_llm(
+        message: TelegramMessage,
+        background_tasks: BackgroundTasks,
+        session: AsyncSession = Depends(get_db)
+):
+    allowed_users = await get_user_ids(session)
+    if message.user.user_id not in allowed_users:
+        raise HTTPException(status_code=403,
+                            detail="User not registered")
+
+    grammar_entry = GrammarEntryV2(
+        grammar_name_kr="N + (이)야",
+        grammar_name_rus="«это…», «является…» (неофициально-невежливый стиль, панмаль)",
+        level=1,
+        related_grammars=["입니다/입니까", "**이에요 / 예요**"],
+        content="**Описание:** \n**이야** - это форма связки **이다** в неофициально-невежливом стиле. Используется при разговоре с близкими людьми, ровесниками или младшими, когда нет необходимости соблюдать вежливость. \n\n**Форма:** \n> с существительными, оканчивающимися на **согласную**: **N + 이야** \n> с существительными, оканчивающимися на **гласную**: **N + 야** \n\n**Примеры:**\n 내 친구는 의사**야**. Мой друг - врач. 이건 내 가방**이야**. Это моя сумка. 오늘은 내 생일**이야**. Сегодня мой день рождения. \n\n**Примечания:** \n1. Это **самая простая и невежливая форма**, не используется в официальных ситуациях, с малознакомыми людьми. \n2. Подходит только для неформального общения с очень хорошими друзьями или детьми. \n3. Это аналог форм **이에요 / 예요, 입니다/입니까** в неофициальном стиле."
+    )
+    mode = "single_grammar"
+    retrieved_grammars = [grammar_entry]
+    return {"llm_response": retrieved_grammars, "mode": mode}
+
+@app.post("/invokeasdf")
 async def process_message(
     message: TelegramMessage,
     background_tasks: BackgroundTasks,
@@ -112,7 +135,7 @@ async def process_message(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
-        reranking_model=reranking_model,
+        # reranking_model=reranking_model,
         session=session,
     )
 
@@ -133,15 +156,13 @@ async def process_message(
     )
 
     if router_agent_response.output.message_type == "direct_grammar_search":
-        # TODO: Uncomment message history
         query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
             message_history=message_history,
         )
         local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
-        
-        # TODO Add related grammars
+
         if not query_rewriter_response.output:
             # INFO: answer directly if no grammars are found
             mode = "no_grammar"
@@ -177,11 +198,11 @@ async def process_message(
         docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
         # Generation
+        # TODO: Проверить Dependencies system_prompt
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
             deps=docs,
             usage_limits=UsageLimits(request_limit=5),
-            output_type=str,
             message_history=message_history,
         )
         local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
