@@ -29,7 +29,7 @@ def delete_chat_history(chat_id: int):
     with session_scope() as session:
         # Delete all messages for the specified chat_id
         result = session.execute(
-            delete(MessageBlobModel).where(MessageBlobModel.chat_id == chat_id)
+            delete(MessageBlobModel).where(MessageBlobModel.user_id == chat_id)
         )
         deleted_count = result.rowcount
         

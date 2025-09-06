@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from collections import Counter
 
 from src.db.database import get_sync_db
-from src.db.models import MessageBlobModel, UserModel, ChatModel
+from src.db.models import MessageBlobModel, UserModel
 from sqlalchemy import func
 
 
@@ -40,11 +40,11 @@ def get_message_statistics():
         # Get message count per chat
         chat_message_counts = (
             session.query(
-                ChatModel.id,
+                UserModel.id,
                 func.count(MessageBlobModel.id).label('message_count')
             )
-            .join(MessageBlobModel, MessageBlobModel.chat_id == ChatModel.id)
-            .group_by(ChatModel.id)
+            .join(MessageBlobModel, MessageBlobModel.user_id == UserModel.id)
+            .group_by(UserModel.id)
             .all()
         )
         
@@ -69,8 +69,8 @@ def get_message_statistics():
                 UserModel.first_name,
                 func.count(MessageBlobModel.id).label('message_count')
             )
-            .join(ChatModel, ChatModel.id == UserModel.chat_id)
-            .join(MessageBlobModel, MessageBlobModel.chat_id == ChatModel.id)
+            .join(UserModel, UserModel.id == UserModel.id)
+            .join(MessageBlobModel, MessageBlobModel.user_id == UserModel.id)
             .group_by(UserModel.id)
             .order_by(func.count(MessageBlobModel.id).desc())
             .limit(5)

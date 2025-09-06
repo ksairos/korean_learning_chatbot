@@ -5,7 +5,7 @@ from rich.pretty import pprint
 
 from src.db.database import get_sync_db
 
-from src.db.models import UserModel, ChatModel, MessageBlobModel
+from src.db.models import UserModel
 
 
 @contextmanager
@@ -21,13 +21,13 @@ def session_scope():
     finally:
         session.close()
 
-def retrieve_message_history(chat_id: int):
+def retrieve_message_history(user_id: int):
     with session_scope() as session:
-        chat = session.get(ChatModel, chat_id)
-        if not chat:
-            print("Chat not found")
+        user = session.get(UserModel, user_id)
+        if not user:
+            print("User not found")
             return
-        messages = chat.messages
+        messages = user.messages
         for message in messages[:5]:
             raw_data = json.loads(message.data.decode("utf-8"))
             for item in raw_data:

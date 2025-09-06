@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from sqlalchemy import delete
 
 from src.db.database import get_sync_db
-from src.db.models import UserModel, ChatModel
+from src.db.models import UserModel
 
 
 @contextmanager
@@ -23,11 +23,8 @@ def delete_user(user_id: int):
     """Delete all message history for a specific chat ID."""
     with session_scope() as session:
         # Delete all messages for the specified chat_id
-        user = session.execute(
+        session.execute(
             delete(UserModel).where(UserModel.id == user_id)
-        )
-        chat = session.execute(
-            delete(ChatModel).where(ChatModel.id == user_id)
         )
 
         print(f"Successfully deleted user of ID {user_id}")

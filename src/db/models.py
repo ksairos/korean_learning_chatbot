@@ -22,43 +22,39 @@ class UserModel(Base):
         default=lambda: datetime.now(timezone.utc)
     )
 
-    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), unique=True)
-    chat: Mapped["ChatModel"] = relationship(
-        "ChatModel",
-        back_populates="user",
-        uselist=False
-    )
-
-
-class ChatModel(Base):
-    __tablename__ = "chats"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc)
-    )
+    chat_id: Mapped[int] = mapped_column(BigInteger, unique=True)
 
     # Relationship to raw message blobs
     messages: Mapped[list["MessageBlobModel"]] = relationship(
         "MessageBlobModel",
-        back_populates="chat", 
+        back_populates="user",
         lazy="dynamic"
     )
-    user: Mapped["UserModel"] = relationship(
-        "UserModel",
-        back_populates="chat",
-        uselist=False
-    )
+
+
+# class ChatModel(Base):
+#     __tablename__ = "chats"
+#
+#     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+#     created_at: Mapped[datetime] = mapped_column(
+#         DateTime(timezone=True),
+#         nullable=False,
+#         default=lambda: datetime.now(timezone.utc)
+#     )
+#
+#     user: Mapped["UserModel"] = relationship(
+#         "UserModel",
+#         back_populates="chat",
+#         uselist=False
+#     )
 
 
 class MessageBlobModel(Base):
     __tablename__ = "message_blobs"
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    chat_id: Mapped[int] = mapped_column(
-        ForeignKey("chats.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -67,7 +63,7 @@ class MessageBlobModel(Base):
     )
     data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     
-    chat: Mapped['ChatModel'] = relationship(
-        'ChatModel', 
+    user: Mapped['UserModel'] = relationship(
+        'UserModel',
         back_populates='messages'
     )

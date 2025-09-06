@@ -1,9 +1,7 @@
 from contextlib import contextmanager
-from sqlalchemy import delete
 
 from src.config.settings import Config
 from src.db.database import get_sync_db
-from src.db.models import UserModel, ChatModel
 from src.db.scripts.delete_user import delete_user
 from src.db.scripts.list_users import list_user_ids
 

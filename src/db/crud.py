@@ -3,7 +3,7 @@ from sqlalchemy import desc, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelRequest, ModelResponse
 
-from src.db.models import ChatModel, MessageBlobModel, UserModel
+from src.db.models import MessageBlobModel, UserModel
 from src.schemas.schemas import TelegramUser
 
 
@@ -13,11 +13,6 @@ async def add_user(session: AsyncSession, user: TelegramUser) -> None:
     """
     existing_user = await session.get(UserModel, user.user_id)
     if not existing_user:
-        # Add new chat
-        new_chat = ChatModel(
-            id=user.chat_id,
-            messages=[]
-        )
         # Add new user
         new_user = UserModel(
             id=user.user_id,
@@ -25,10 +20,9 @@ async def add_user(session: AsyncSession, user: TelegramUser) -> None:
             first_name=user.first_name,
             last_name=user.last_name,
             chat_id=user.chat_id,
-            chat=new_chat,
+            messages=[]
         )
 
-        session.add(new_chat)
         session.add(new_user)
 
         try:
@@ -49,17 +43,17 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
         user: Telegram user class
         limit: Number of last turns to return
     """
-    chat = await session.get(ChatModel, user.chat_id)
+    user_model = await session.get(UserModel, user.user_id)
     chat_history: list[ModelMessage] = []
 
-    if not chat:
-        logfire.error(f"Chat {user.chat_id} doesn't exist, adding new user")
+    if not user:
+        logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
         await add_user(session, user)
         return chat_history
 
     recent = (
         await session.execute(
-            chat.messages.
+            user_model.messages.
             order_by(desc(MessageBlobModel.created_at))
         )
     ).scalars().all()
@@ -83,18 +77,18 @@ async def update_message_history(
         user: Telegram user class
         new_messages: New message blobs
     """
-    chat = await session.get(ChatModel, user.chat_id)
+    user_model = await session.get(UserModel, user.user_id)
     chat_history = []
 
-    if not chat:
-        logfire.error(f"Chat {user.chat_id} doesn't exist, adding new user")
+    if not user_model:
+        logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
         await add_user(session, user)
-        chat = await session.get(ChatModel, user.chat_id)
+        user_model = await session.get(UserModel, user.user_id)
 
     else:
         recent = (
             await session.execute(
-                chat.messages.
+                user_model.messages.
                 order_by(desc(MessageBlobModel.created_at))
             )
         ).scalars().all()
@@ -104,11 +98,11 @@ async def update_message_history(
 
 
     new_message = MessageBlobModel(
-        chat_id=user.chat_id,
+        user_id=user.user_id,
         data=new_messages,
     )
 
-    chat.messages.append(new_message)
+    user_model.messages.append(new_message)
     session.add(new_message)
 
     try:
@@ -117,7 +111,7 @@ async def update_message_history(
 
     except Exception as e:
         await session.rollback()
-        logfire.error(f"An unexpected error occurred adding message to chat {user.chat_id}: {e}")
+        logfire.error(f"An unexpected error occurred adding message to chat {user.user_id}: {e}")
 
 
 async def delete_chat_history(
@@ -126,7 +120,7 @@ async def delete_chat_history(
     """Delete all message history for a specific chat ID."""
 
     result = await session.execute(
-        delete(MessageBlobModel).where(MessageBlobModel.chat_id == user.chat_id)
+        delete(MessageBlobModel).where(MessageBlobModel.user_id == user.user_id)
     )
     deleted_count = result.rowcount
 
