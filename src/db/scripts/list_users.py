@@ -43,5 +43,23 @@ def list_users():
             print(f"{user.id:<10} {username:<20} {full_name:<30}")
 
 
+def list_user_ids():
+    ids = []
+    with session_scope() as session:
+        users = session.query(UserModel).all()
+
+        if not users:
+            print("No users found in the database.")
+            return None
+
+        print(f"Total users: {len(users)}")
+
+        for user in users:
+            ids.append(user.id)
+
+        return ids
+
+
+
 if __name__ == "__main__":
     list_users()
