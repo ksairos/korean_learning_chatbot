@@ -24,14 +24,25 @@ class GrammarSelectionStates(StatesGroup):
     waiting_for_selection = State()
 
 
+class ProcessingStates(StatesGroup):
+    processing_message = State()
+
+
 @chat_router.message(F.text)
 async def invoke(message: types.Message, state: FSMContext):
     if message.text.startswith("/"):
         return
     
-    # Clear any existing state when user sends new message
+    # Check if user is already processing a message
     current_state = await state.get_state()
-    if current_state:
+    if current_state == ProcessingStates.processing_message.state:
+        return
+    
+    # Set processing state to block new messages
+    await state.set_state(ProcessingStates.processing_message)
+    
+    # Clear any grammar selection state
+    if current_state == GrammarSelectionStates.waiting_for_selection.state:
         await state.clear()
 
     try:
@@ -67,6 +78,7 @@ async def invoke(message: types.Message, state: FSMContext):
                     if mode == "single_grammar":
                         formatted_response = grammar_entry_to_markdown(llm_response[0])
                         await message.answer(formatted_response)
+                        await state.clear()  # Clear processing state
 
                     elif mode == "multiple_grammars":
                         await state.set_state(GrammarSelectionStates.waiting_for_selection)
@@ -97,12 +109,15 @@ async def invoke(message: types.Message, state: FSMContext):
                     elif mode == "no_grammars":
                         await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Позвольте мне ответить самостоятельно~")
                         await message.answer(custom_telegram_format(llm_response))
+                        await state.clear()  # Clear processing state
 
                     else:
                         await message.answer(custom_telegram_format(llm_response))
+                        await state.clear()  # Clear processing state
 
                 elif response.status == 403:
                     await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
+                    await state.clear()  # Clear processing state
 
                 else:
                     logging.error(
@@ -111,6 +126,7 @@ async def invoke(message: types.Message, state: FSMContext):
                     await message.answer(
                         "Произошла ошибка, сообщите в поддержку или попробуйте снова позже\n\n"
                         "Something went wrong. Report to the support or try again later.")
+                    await state.clear()  # Clear processing state
     except Exception as e:
         logging.error(f"Error processing message via API: {e}")
         try:
@@ -118,6 +134,8 @@ async def invoke(message: types.Message, state: FSMContext):
             await thinking_message.delete()
         except:
             pass
+        finally:
+            await state.clear()  # Always clear processing state on error
 
 
 @chat_router.callback_query(F.data.startswith("grammar_select:"))

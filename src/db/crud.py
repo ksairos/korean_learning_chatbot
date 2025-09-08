@@ -97,12 +97,19 @@ async def update_message_history(
             chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
 
 
+    # Serialize new_messages to bytes for storage
+    if isinstance(new_messages, bytes):
+        message_data = new_messages
+    else:
+        message_data = ModelMessagesTypeAdapter.dump_json(new_messages)
+    
     new_message = MessageBlobModel(
         user_id=user.user_id,
-        data=new_messages,
+        data=message_data,
     )
 
     user_model.messages.append(new_message)
+    logfire.debug(f"USER MODEL MESSAGES: {user_model.messages}")
     session.add(new_message)
 
     try:
