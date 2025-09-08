@@ -91,30 +91,7 @@ except Exception as e:
 async def root():
     return {"message": "API"}
 
-
 @app.post("/invoke")
-async def without_llm(
-        message: TelegramMessage,
-        background_tasks: BackgroundTasks,
-        session: AsyncSession = Depends(get_db)
-):
-    allowed_users = await get_user_ids(session)
-    if message.user.user_id not in allowed_users:
-        raise HTTPException(status_code=403,
-                            detail="User not registered")
-
-    grammar_entry = GrammarEntryV2(
-        grammar_name_kr="N + (이)야",
-        grammar_name_rus="«это…», «является…» (неофициально-невежливый стиль, панмаль)",
-        level=1,
-        related_grammars=["입니다/입니까", "**이에요 / 예요**"],
-        content="**Описание:** \n**이야** - это форма связки **이다** в неофициально-невежливом стиле. Используется при разговоре с близкими людьми, ровесниками или младшими, когда нет необходимости соблюдать вежливость. \n\n**Форма:** \n> с существительными, оканчивающимися на **согласную**: **N + 이야** \n> с существительными, оканчивающимися на **гласную**: **N + 야** \n\n**Примеры:**\n 내 친구는 의사**야**. Мой друг - врач. 이건 내 가방**이야**. Это моя сумка. 오늘은 내 생일**이야**. Сегодня мой день рождения. \n\n**Примечания:** \n1. Это **самая простая и невежливая форма**, не используется в официальных ситуациях, с малознакомыми людьми. \n2. Подходит только для неформального общения с очень хорошими друзьями или детьми. \n3. Это аналог форм **이에요 / 예요, 입니다/입니까** в неофициальном стиле."
-    )
-    mode = "single_grammar"
-    retrieved_grammars = [grammar_entry]
-    return {"llm_response": retrieved_grammars, "mode": mode}
-
-@app.post("/invokeasdf")
 async def process_message(
     message: TelegramMessage,
     background_tasks: BackgroundTasks,
@@ -240,3 +217,26 @@ async def process_message(
     else:
         local_logfire.error(f"Unknown message type: {router_agent_response.output.message_type}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+# @app.post("/invoke_test")
+# async def without_llm(
+#         message: TelegramMessage,
+#         background_tasks: BackgroundTasks,
+#         session: AsyncSession = Depends(get_db)
+# ):
+#     allowed_users = await get_user_ids(session)
+#     if message.user.user_id not in allowed_users:
+#         raise HTTPException(status_code=403,
+#                             detail="User not registered")
+#
+#     grammar_entry = GrammarEntryV2(
+#         grammar_name_kr="N + (이)야",
+#         grammar_name_rus="«это…», «является…» (неофициально-невежливый стиль, панмаль)",
+#         level=1,
+#         related_grammars=["입니다/입니까", "**이에요 / 예요**"],
+#         content="**Описание:** \n**이야** - это форма связки **이다** в неофициально-невежливом стиле. Используется при разговоре с близкими людьми, ровесниками или младшими, когда нет необходимости соблюдать вежливость. \n\n**Форма:** \n> с существительными, оканчивающимися на **согласную**: **N + 이야** \n> с существительными, оканчивающимися на **гласную**: **N + 야** \n\n**Примеры:**\n 내 친구는 의사**야**. Мой друг - врач. 이건 내 가방**이야**. Это моя сумка. 오늘은 내 생일**이야**. Сегодня мой день рождения. \n\n**Примечания:** \n1. Это **самая простая и невежливая форма**, не используется в официальных ситуациях, с малознакомыми людьми. \n2. Подходит только для неформального общения с очень хорошими друзьями или детьми. \n3. Это аналог форм **이에요 / 예요, 입니다/입니까** в неофициальном стиле."
+#     )
+#     mode = "single_grammar"
+#     retrieved_grammars = [grammar_entry]
+#     return {"llm_response": retrieved_grammars, "mode": mode}
