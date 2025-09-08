@@ -68,7 +68,7 @@ class RouterAgentDeps:
     sparse_embedding: SparseTextEmbedding
     # reranking_model: TextCrossEncoder
     session: AsyncSession
-    late_interaction_model: Optional[LateInteractionTextEmbedding] = None
+    late_interaction_model: LateInteractionTextEmbedding = None
 
 class RouterAgentResult(BaseModel):
     user_message: str

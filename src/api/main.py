@@ -4,8 +4,7 @@ import os
 from aiogram import Bot
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.params import Depends
-from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding, TextEmbedding
-from fastembed.rerank.cross_encoder import TextCrossEncoder
+from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 from pydantic_ai.usage import UsageLimits
@@ -30,6 +29,8 @@ app = FastAPI()
 
 config = Config()
 bot = Bot(token=config.bot_token)
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 cache_directory = os.path.expanduser("~/.cache/huggingface/hub")
 
@@ -114,6 +115,7 @@ async def process_message(
         sparse_embedding=sparse_embedding,
         # reranking_model=reranking_model,
         session=session,
+        late_interaction_model=late_interaction_model
     )
 
     # Retrieve message history if present
@@ -171,13 +173,13 @@ async def process_message(
 
         # Retrieval
         retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)
-        docs = [doc.content["content"] for doc in retrieved_docs if doc]
+        # docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
         # Generation
         # TODO: Проверить Dependencies system_prompt
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
-            deps=docs,
+            deps=retrieved_docs,
             usage_limits=UsageLimits(request_limit=5),
             message_history=message_history,
         )

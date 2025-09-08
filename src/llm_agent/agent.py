@@ -4,14 +4,12 @@ import logfire
 
 from dotenv import load_dotenv
 
-from src.config.prompts import prompts
 from src.config.settings import Config
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.settings import ModelSettings
 
 
-from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,
@@ -21,16 +19,6 @@ from src.schemas.schemas import (
 load_dotenv()
 
 config = Config()
-
-#IMPORTANT Modify to change the bot language
-language = "ru"
-if language == "ru":
-    router_prompt = prompts.router_prompt_v2_ru
-    translator_prompt = prompts.translator_prompt_ru
-else:
-    router_prompt = prompts.router_prompt_v2_en
-    translator_prompt = prompts.translator_prompt_en
-
 
 router_agent = Agent(
     model="openai:gpt-4.1",

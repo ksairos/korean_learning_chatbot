@@ -111,7 +111,6 @@ async def update_message_history(
     )
 
     user_model.messages.append(new_message)
-    logfire.debug(f"USER MODEL MESSAGES: {user_model.messages}")
     session.add(new_message)
 
     try:

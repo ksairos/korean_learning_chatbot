@@ -61,7 +61,7 @@ async def retrieve_grammars_tool(
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF
     response = await deps.qdrant_client.query_points(
-        collection_name=config.qdrant_collection_name_v2,
+        collection_name=config.qdrant_collection_name_final,
         prefetch=[bm_25_prefetch, dense_prefetch],
         query=FusionQuery(fusion=Fusion.RRF),
         with_payload=True,
