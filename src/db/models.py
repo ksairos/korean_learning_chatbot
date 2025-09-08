@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import uuid4, UUID
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-from sqlalchemy import DateTime, ForeignKey, LargeBinary, BigInteger
+from sqlalchemy import DateTime, ForeignKey, LargeBinary, BigInteger, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
@@ -62,6 +62,7 @@ class MessageBlobModel(Base):
         default=lambda: datetime.now(timezone.utc)
     )
     data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     user: Mapped['UserModel'] = relationship(
         'UserModel',

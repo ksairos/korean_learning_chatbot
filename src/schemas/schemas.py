@@ -64,7 +64,7 @@ class TelegramMessage(BaseModel):
 @dataclass
 class RouterAgentDeps:
     openai_client: AsyncOpenAI
-    qdrant_client: QdrantClient | AsyncQdrantClient
+    qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
     # reranking_model: TextCrossEncoder
     session: AsyncSession

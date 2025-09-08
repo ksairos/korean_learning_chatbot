@@ -136,7 +136,6 @@ async def process_message(
         query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
-            message_history=message_history,
         )
         local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
 

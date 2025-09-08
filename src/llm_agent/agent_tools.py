@@ -60,12 +60,13 @@ async def retrieve_grammars_tool(
     )
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF
-    hits = deps.qdrant_client.query_points(
+    response = await deps.qdrant_client.query_points(
         collection_name=config.qdrant_collection_name_v2,
         prefetch=[bm_25_prefetch, dense_prefetch],
         query=FusionQuery(fusion=Fusion.RRF),
         with_payload=True,
-    ).points
+    )
+    hits = response.points
 
     logfire.info(f"Received {len(hits)} results from Qdrant.")
 
@@ -96,7 +97,7 @@ async def retrieve_grammars_tool(
             # llm_filter_prompt.append(f"{i}. {doc}")
 
         llm_filter_agent = Agent(
-            model="openai:gpt-4o",
+            model="openai:gpt-4.1-mini",
             instrument=True,
             output_type=List[int],
             instructions="""
@@ -178,44 +179,48 @@ async def retrieve_docs_tool(
 
         if search_strategy == "hybrid":
             if rerank_strategy in ["cross", "none", "jina"]:
-                hits = deps.qdrant_client.query_points(
+                response = await deps.qdrant_client.query_points(
                     collection_name=config.qdrant_collection_name_rag_small,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=FusionQuery(fusion=Fusion.RRF),
                     limit=retrieve_top_k,
                     with_payload=True,
-                ).points
+                )
+                hits = response.points
                 local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
             elif rerank_strategy == "colbert":
-                hits = deps.qdrant_client.query_points(
+                response = await deps.qdrant_client.query_points(
                     collection_name=config.qdrant_collection_name_rag_small,
                     prefetch=[bm_25_prefetch, dense_prefetch],
                     query=late_vector_query,
                     using=config.late_interaction_model,
                     limit=rerank_top_k,
                     with_payload=True,
-                ).points
+                )
+                hits = response.points
                 local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
         elif search_strategy == "bm25" and rerank_strategy == "none":
-            hits = deps.qdrant_client.query_points(
+            response = await deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_rag_small,
                 query=sparse_vector_query,
                 using=config.sparse_embedding_model,
                 with_payload=True,
                 limit=retrieve_top_k,
-            ).points
+            )
+            hits = response.points
             local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
         elif search_strategy == "dense" and rerank_strategy == "none":
-            hits = deps.qdrant_client.query_points(
+            response = await deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_rag_small,
                 using=config.embedding_model,
                 query=vector_query,
                 with_payload=True,
                 limit=retrieve_top_k,
-            ).points
+            )
+            hits = response.points
             local_logfire.info(f"Received {len(hits)} results from Qdrant.")
 
         else:

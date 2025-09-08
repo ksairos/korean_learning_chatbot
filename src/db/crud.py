@@ -1,5 +1,5 @@
 import logfire
-from sqlalchemy import desc, select, delete
+from sqlalchemy import desc, select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelRequest, ModelResponse
 
@@ -54,7 +54,9 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
     recent = (
         await session.execute(
             user_model.messages.
-            order_by(desc(MessageBlobModel.created_at))
+            where(MessageBlobModel.is_active == True).
+            order_by(desc(MessageBlobModel.created_at)).
+            limit(5)
         )
     ).scalars().all()
 
@@ -132,6 +134,21 @@ async def delete_chat_history(
     deleted_count = result.rowcount
 
     return deleted_count
+
+
+async def clear_chat_history(session: AsyncSession, user: TelegramUser) -> int:
+    """
+    Mark all user's messages as inactive (soft delete for chat clearing)
+    Returns the number of messages marked as inactive
+    """
+    result = await session.execute(
+        update(MessageBlobModel)
+        .where(MessageBlobModel.user_id == user.user_id)
+        .values(is_active=False)
+    )
+    
+    await session.commit()
+    return result.rowcount
 
 
 async def get_user_ids(session: AsyncSession):
