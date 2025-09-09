@@ -13,6 +13,9 @@ from src.config.settings import Config
 from src.schemas.schemas import TelegramMessage, TelegramUser
 from src.tgbot.misc.utils import animate_thinking
 from src.utils.json_to_telegram_md import grammar_entry_to_markdown, custom_telegram_format
+from src.db.crud import update_message_history, deactivate_last_grammar_selection
+from src.db.database import async_session
+from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
 
 chat_router = Router()
 config = Config()
@@ -92,7 +95,7 @@ async def invoke(message: types.Message, state: FSMContext):
                             # Truncate title if too long for button
                             grammar_name_kr = grammar["grammar_name_kr"].strip()
                             grammar_name_rus = grammar["grammar_name_rus"].strip()
-                            title = f"{grammar_name_kr} - {grammar_name_rus}"[:50]
+                            title = f"{grammar_name_kr} - {grammar_name_rus}"
                             if not title:
                                 title = f"Грамматика {i}"
 
@@ -132,7 +135,7 @@ async def invoke(message: types.Message, state: FSMContext):
         try:
             animation_task.cancel()
             await thinking_message.delete()
-        except:
+        except Exception:
             pass
         finally:
             await state.clear()  # Always clear processing state on error
@@ -161,22 +164,46 @@ async def handle_grammar_selection(callback: types.CallbackQuery, state: FSMCont
             selected_grammar = grammars[grammar_index]
             formatted_response = grammar_entry_to_markdown(selected_grammar)
             
+            # Update message history with the selection
+            try:
+                user = TelegramUser(
+                    user_id=callback.from_user.id,
+                    username=callback.from_user.username,
+                    first_name=callback.from_user.first_name,
+                    last_name=callback.from_user.last_name,
+                    chat_id=callback.message.chat.id
+                )
+                
+                # Create selection message pair
+                grammar_title = f"{selected_grammar['grammar_name_kr'].strip()} - {selected_grammar['grammar_name_rus'].strip()}"
+                user_selection = ModelRequest(parts=[UserPromptPart(content=f"Selected: {grammar_title}", part_kind="user-prompt")])
+                model_response = ModelResponse(parts=[TextPart(content=formatted_response, part_kind="text")])
+                
+                async with async_session() as session:
+                    # Deactivate any previous grammar selection first
+                    await deactivate_last_grammar_selection(session, user)
+                    # Add the new selection
+                    await update_message_history(session, user, [user_selection, model_response])
+                    
+            except Exception as e:
+                logging.error(f"Failed to update message history: {e}")
+            
             # Check if this user already has a response message
             response_message_id = data.get("response_message_id")
             
             if response_message_id:
-                # Edit the existing response message
+                # Delete the previous message and send a new one
                 try:
-                    await callback.bot.edit_message_text(
+                    await callback.bot.delete_message(
                         chat_id=callback.message.chat.id,
-                        message_id=response_message_id,
-                        text=formatted_response
+                        message_id=response_message_id
                     )
                 except Exception as e:
-                    # If editing fails, send new message
-                    logging.warning(f"Failed to edit message {response_message_id}: {e}")
-                    response_msg = await callback.message.answer(formatted_response)
-                    await state.update_data(response_message_id=response_msg.message_id)
+                    logging.warning(f"Failed to delete message {response_message_id}: {e}")
+                
+                # Send new message
+                response_msg = await callback.message.answer(formatted_response)
+                await state.update_data(response_message_id=response_msg.message_id)
             else:
                 # Send new response message and store its ID
                 response_msg = await callback.message.answer(formatted_response)

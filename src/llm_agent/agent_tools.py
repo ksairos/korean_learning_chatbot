@@ -107,10 +107,14 @@ async def retrieve_grammars_tool(
 
         llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
         filtered_doc_ids = llm_filter_response.output
-        filtered_docs = [result[i] for i in filtered_doc_ids]
 
-        logfire.info(f"LLM filtered docs: {filtered_docs}")
-        return filtered_docs
+        if filtered_doc_ids:
+            filtered_docs = [result[i] for i in filtered_doc_ids]
+            logfire.info(f"LLM filtered docs: {filtered_docs}")
+            return filtered_docs
+
+        else:
+            return None
 
 
 async def retrieve_docs_tool(

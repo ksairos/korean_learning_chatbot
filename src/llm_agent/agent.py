@@ -30,6 +30,7 @@ router_agent = Agent(
         1. The user's request can be answered with the comprehensive explanation of a specific Korean grammar. Set message_type=direct_grammar_search
         2. The user's request needs a more detailed explanation of a grammar structure or a grammar related question (meaning, grammar description output alone is not enough). Set message_type=thinking_grammar_answer
         3. The user's request is not related to Korean grammar, and requires a general response. Set message_type=casual_answer
+        Follow-up questions should be tagged as message_type=thinking_grammar_answer
     """
 )
 
@@ -66,11 +67,11 @@ thinking_grammar_agent = Agent(
     instructions="""
         Ты - профессиональный агент в RAG системе в роли преподавателя корейского языка. Основываясь на предоставленной информации RETRIEVED DOCS, 
         сформируйте краткий, четкий и точный ответ на запрос пользователя. При необходимости используйте примеры из этой же информации. 
-        Если подходящих документов нет, постарайтесь ответить на запрос пользователя самостоятельно.
+        Если документов нет или они не подходят для ответа на запрос, постарайтесь ответить на запрос пользователя самостоятельно.
     """
 )
 
-@thinking_grammar_agent.system_prompt
+@thinking_grammar_agent.instructions
 def add_docs(ctx: RunContext[list]) -> str:
     docs = ["RETRIEVED DOCS:"]
     for i, doc in enumerate(ctx.deps):

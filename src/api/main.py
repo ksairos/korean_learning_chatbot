@@ -6,7 +6,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.params import Depends
 from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
+from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, ModelRequest
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.agent import AgentRunResult
 from qdrant_client import AsyncQdrantClient
@@ -24,6 +24,7 @@ from src.schemas.schemas import (
     TelegramMessage,
     GrammarEntryV2, RetrievedDoc
 )
+from src.utils.json_to_telegram_md import grammar_entry_to_markdown
 
 app = FastAPI()
 
@@ -149,27 +150,69 @@ async def process_message(
         else:
 
             retrieved_grammars = await retrieve_grammars_tool(deps, query_rewriter_response.output)
+            if retrieved_grammars:
 
-            # Provide a single grammar
-            if len(retrieved_grammars) == 1:
-                mode = "single_grammar"
-                return {"llm_response": retrieved_grammars, "mode": mode}
+                # Provide a single grammar
+                if len(retrieved_grammars) == 1:
+                    mode = "single_grammar"
+                    response = {"llm_response": retrieved_grammars, "mode": mode}
 
-            # Provide multiple grammars
-            elif len(retrieved_grammars) > 1:
-                mode = "multiple_grammars"
-                return {"llm_response": retrieved_grammars, "mode": mode}
+                    # Update chat history with user message and a single grammar
+                    with local_logfire.span("update_message_history"):
+                        new_messages = []
 
-            # Update chat history with new messages
-            with local_logfire.span("update_message_history"):
-                new_messages = query_rewriter_response.new_messages()
-                background_tasks.add_task(update_message_history, session, message.user, new_messages)
-                local_logfire.info(f"new_messages: {new_messages}")
+                        user_message = next(
+                            msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest))
+
+                        formatted_response = grammar_entry_to_markdown(response["llm_response"][0].model_dump())
+                        model_response = ModelResponse(parts=[TextPart(content=formatted_response, part_kind="text")])
+
+                        new_messages.append(user_message)
+                        new_messages.append(model_response)
+
+                        background_tasks.add_task(update_message_history, session, message.user, new_messages)
+                        local_logfire.info(f"new_messages: {new_messages}")
+
+                # Provide multiple grammars
+                else:
+                    mode = "multiple_grammars"
+                    response = {"llm_response": retrieved_grammars, "mode": mode}
+
+                    # Update chat history with user message and grammar choice
+                    with local_logfire.span("update_message_history"):
+                        new_messages = []
+
+                        user_message = next(
+                            msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest)
+                        )
+
+                        model_message = f"Найдено {len(retrieved_grammars)} грамматик по вашему запросу. Выберите одну:\n"
+                        for i, grammar in enumerate(retrieved_grammars):
+                            title = f"{grammar.grammar_name_kr.strip()} - {grammar.grammar_name_rus.strip()}\n"
+                            model_message += title
+
+                        model_response = ModelResponse(parts=[TextPart(content=model_message, part_kind="text")])
+
+                        new_messages.append(user_message)
+                        new_messages.append(model_response)
+
+                        background_tasks.add_task(update_message_history, session, message.user, new_messages)
+                        local_logfire.info(f"new_messages: {new_messages}")
+
+                return response
+
+            else:
+                mode = "no_grammar"
+                router_agent_response.output.message_type = "thinking_grammar_answer"
+
 
     if router_agent_response.output.message_type == "thinking_grammar_answer":
 
         # HyDE
-        hyde_response = await hyde_agent.run(user_prompt=message.user_prompt)
+        hyde_response = await hyde_agent.run(
+            user_prompt=message.user_prompt,
+            message_history=message_history
+        )
 
         # Retrieval
         retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)

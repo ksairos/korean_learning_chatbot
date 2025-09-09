@@ -54,7 +54,7 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
     recent = (
         await session.execute(
             user_model.messages.
-            where(MessageBlobModel.is_active == True).
+            where(MessageBlobModel.is_active).
             order_by(desc(MessageBlobModel.created_at)).
             limit(5)
         )
@@ -148,6 +148,44 @@ async def clear_chat_history(session: AsyncSession, user: TelegramUser) -> int:
     
     await session.commit()
     return result.rowcount
+
+
+async def deactivate_last_grammar_selection(session: AsyncSession, user: TelegramUser) -> bool:
+    """
+    Deactivate the most recent grammar selection (user selection + model response)
+    Returns True if any messages were deactivated
+    """
+    # Find the last 2 active messages (should be selection pair)
+    recent = await session.execute(
+        select(MessageBlobModel)
+        .where(MessageBlobModel.user_id == user.user_id)
+        .where(MessageBlobModel.is_active)
+        .order_by(desc(MessageBlobModel.created_at))
+        .limit(1)
+    )
+    messages = recent.scalars().all()
+
+    # Parse and check if it's a grammar selection
+    try:
+        for msg in messages:
+            parsed = ModelMessagesTypeAdapter.validate_json(msg.data)
+            # Check if any message contains "Selected:" indicating a grammar selection
+            for message in parsed:
+                if hasattr(message, 'parts'):
+                    for part in message.parts:
+                        if hasattr(part, 'content') and 'Selected:' in str(part.content):
+                            # Mark the message as inactive
+                            await session.execute(
+                                update(MessageBlobModel)
+                                .where(MessageBlobModel.id == msg.id)
+                                .values(is_active=False)
+                            )
+                            await session.commit()
+                            return True
+    except Exception as e:
+        logfire.warning(f"Error checking grammar selection messages: {e}")
+    
+    return False
 
 
 async def get_user_ids(session: AsyncSession):
