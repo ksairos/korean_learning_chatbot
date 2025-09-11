@@ -23,16 +23,16 @@ async def user_start(message: Message):
 
     # IMPORTANT Uncomment to turn on user adding with /start
 
-    user = TelegramUser(
-        user_id=message.from_user.id,
-        username=message.from_user.username,
-        first_name=message.from_user.first_name,
-        last_name=message.from_user.last_name,
-        chat_id=message.chat.id
-    )
-
-    async for session in get_db():
-        await add_user(session=session, user=user)
+    # user = TelegramUser(
+    #     user_id=message.from_user.id,
+    #     username=message.from_user.username,
+    #     first_name=message.from_user.first_name,
+    #     last_name=message.from_user.last_name,
+    #     chat_id=message.chat.id
+    # )
+    #
+    # async for session in get_db():
+    #     await add_user(session=session, user=user)
 
 
 @user_router.message(Command("clear_history"))
