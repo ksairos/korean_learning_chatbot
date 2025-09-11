@@ -10,7 +10,8 @@ from pydantic_ai.agent import  Agent
 from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
 
 from src.config.settings import Config
-from src.schemas.schemas import GrammarEntryV2, RetrievedGrammar, RouterAgentDeps, RetrievedDoc
+from src.schemas.schemas import GrammarEntryV2, RetrievedGrammar, RouterAgentDeps, RetrievedDoc, \
+    ThinkingGrammarAgentDeps
 
 load_dotenv()
 config = Config()
@@ -118,7 +119,7 @@ async def retrieve_grammars_tool(
 
 
 async def retrieve_docs_tool(
-        deps: RouterAgentDeps,
+        deps: ThinkingGrammarAgentDeps,
         search_query: str,
         retrieve_top_k: int = 50,
         rerank_top_k: int = 5,

@@ -192,18 +192,19 @@ async def handle_grammar_selection(callback: types.CallbackQuery, state: FSMCont
             response_message_id = data.get("response_message_id")
             
             if response_message_id:
-                # Delete the previous message and send a new one
                 try:
-                    await callback.bot.delete_message(
-                        chat_id=callback.message.chat.id,
-                        message_id=response_message_id
-                    )
+                    response_msg = await callback.message.edit_text(formatted_response)
+                    await state.update_data(response_message_id=response_msg.message_id)
+                # Delete the previous message and send a new one
                 except Exception as e:
-                    logging.warning(f"Failed to delete message {response_message_id}: {e}")
-                
-                # Send new message
-                response_msg = await callback.message.answer(formatted_response)
-                await state.update_data(response_message_id=response_msg.message_id)
+                    logging.warning(f"Failed to edit message {response_message_id}: {e}")
+                    # await callback.bot.delete_message(
+                    #     chat_id=callback.message.chat.id,
+                    #     message_id=response_message_id
+                    # )
+                    # response_msg = await callback.message.answer(formatted_response)
+                    # await state.update_data(response_message_id=response_msg.message_id)
+
             else:
                 # Send new response message and store its ID
                 response_msg = await callback.message.answer(formatted_response)

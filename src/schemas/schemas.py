@@ -70,10 +70,18 @@ class RouterAgentDeps:
     session: AsyncSession
     late_interaction_model: LateInteractionTextEmbedding = None
 
+@dataclass
+class ThinkingGrammarAgentDeps:
+    openai_client: AsyncOpenAI
+    qdrant_client: AsyncQdrantClient
+    sparse_embedding: SparseTextEmbedding
+    # reranking_model: TextCrossEncoder
+    session: AsyncSession
+    late_interaction_model: LateInteractionTextEmbedding = None
+
 class RouterAgentResult(BaseModel):
-    user_message: str
     message_type: Literal[
         "direct_grammar_search",
         "thinking_grammar_answer",
         "casual_answer",
-    ] = "direct_grammar_answer"
+    ] = "thinking_grammar_answer"

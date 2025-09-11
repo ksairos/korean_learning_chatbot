@@ -16,7 +16,7 @@ from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent, query_rewriter_agent, thinking_grammar_agent, system_agent, hyde_agent
+from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, hyde_agent
 from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
@@ -126,7 +126,7 @@ async def process_message(
         user_prompt=message.user_prompt,
         usage_limits=UsageLimits(request_limit=5),
         output_type=RouterAgentResult,
-        message_history=message_history,
+        message_history=message_history[-2:],
     )
 
     router_answer = f"Сообщение: {message.user_prompt}, тип: {router_agent_response.output.message_type}"
@@ -136,13 +136,13 @@ async def process_message(
     )
 
     if router_agent_response.output.message_type == "direct_grammar_search":
-        query_rewriter_response = await query_rewriter_agent.run(
+        query_rewriter_response = await hyde_agent.run(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
         )
         local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
 
-        if not query_rewriter_response.output:
+        if query_rewriter_response.output == "None":
             # INFO: answer directly if no grammars are found
             mode = "no_grammar"
             router_agent_response.output.message_type = "thinking_grammar_answer"
@@ -208,21 +208,19 @@ async def process_message(
 
     if router_agent_response.output.message_type == "thinking_grammar_answer":
 
-        # HyDE
-        hyde_response = await hyde_agent.run(
-            user_prompt=message.user_prompt,
-            message_history=message_history
-        )
-
-        # Retrieval
-        retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(deps, hyde_response.output)
+        # # Retrieval
+        # retrieved_docs: list[RetrievedDoc | None] = await retrieve_docs_tool(
+        #     deps,
+        #     message.user_prompt,
+        #     message_history
+        # )
         # docs = [doc.content["content"] for doc in retrieved_docs if doc]
 
         # Generation
         # TODO: Проверить Dependencies system_prompt
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
-            deps=retrieved_docs,
+            deps=deps,
             usage_limits=UsageLimits(request_limit=5),
             message_history=message_history,
         )
@@ -245,7 +243,7 @@ async def process_message(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
             output_type=str,
-            message_history=message_history,
+            message_history=message_history[:-2],
         )
         local_logfire.info("System agent response: {response}", response=casual_response.output)
 
