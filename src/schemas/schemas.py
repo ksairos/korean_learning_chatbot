@@ -4,11 +4,9 @@ from typing import Dict, List, Literal, Optional
 from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
 from pydantic import BaseModel
-from qdrant_client import QdrantClient, AsyncQdrantClient
+from qdrant_client import AsyncQdrantClient
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastembed.rerank.cross_encoder import TextCrossEncoder
-
 
 
 class GrammarEntry(BaseModel):
@@ -57,12 +55,14 @@ class TelegramMessage(BaseModel):
     """
     Schema for telegram message sent from Telegram to API
     """
-
     user_prompt: str
     user: TelegramUser
 
 @dataclass
 class RouterAgentDeps:
+    """
+    Dependencies for router agent
+    """
     openai_client: AsyncOpenAI
     qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
@@ -72,6 +72,9 @@ class RouterAgentDeps:
 
 @dataclass
 class ThinkingGrammarAgentDeps:
+    """
+    Dependencies for thinking grammar agent
+    """
     openai_client: AsyncOpenAI
     qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
@@ -80,6 +83,9 @@ class ThinkingGrammarAgentDeps:
     late_interaction_model: LateInteractionTextEmbedding = None
 
 class RouterAgentResult(BaseModel):
+    """
+    Router agent result type
+    """
     message_type: Literal[
         "direct_grammar_search",
         "thinking_grammar_answer",

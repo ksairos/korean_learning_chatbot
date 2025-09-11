@@ -5,7 +5,6 @@ from typing import List, Literal
 
 import logfire
 from dotenv import load_dotenv
-from pydantic_ai import RunContext
 from pydantic_ai.agent import  Agent
 from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
 

@@ -1,7 +1,3 @@
-from typing import List, Union
-
-import logfire
-
 from dotenv import load_dotenv
 
 from src.config.settings import Config
@@ -11,9 +7,8 @@ from pydantic_ai.settings import ModelSettings
 
 from src.llm_agent.agent_tools import retrieve_docs_tool
 from src.schemas.schemas import (
-    RouterAgentDeps,
     RouterAgentResult,
-    GrammarEntryV2, ThinkingGrammarAgentDeps,
+    ThinkingGrammarAgentDeps,
 )
 
 load_dotenv()
@@ -129,12 +124,12 @@ system_agent = Agent(
         - Если запрос не связан с корейским языком, откажитесь вежливо, указав, что вы можете помочь только с вопросами о корейском языке.
     """
 )
-
-
-summarize_agent = Agent(
-    'openai:gpt-4.1-mini',
-    instructions="""
-    Summarize this conversation, omitting small talk and unrelated topics.
-    Focus on the essentials of the discussion and next steps
-    """,
-)
+#
+#
+# summarize_agent = Agent(
+#     'openai:gpt-4.1-mini',
+#     instructions="""
+#     Summarize this conversation, omitting small talk and unrelated topics.
+#     Focus on the essentials of the discussion and next steps
+#     """,
+# )
