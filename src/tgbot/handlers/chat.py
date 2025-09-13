@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from aiogram import types, Router, F
+from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -22,6 +22,20 @@ chat_router = Router()
 config = Config()
 
 API_URL = f"http://{config.fastapi_host}:{config.fastapi_port}/invoke"
+
+
+async def notify_admins_about_error(bot: Bot, error_details: str, user_info: str):
+    """Notify all admins about server errors."""
+    if not config.admin_ids:
+        return
+    
+    admin_message = f"🚨 Server Error Alert\n\n{error_details}\n\nUser: {user_info}"
+    
+    for admin_id in config.admin_ids:
+        try:
+            await bot.send_message(admin_id, admin_message)
+        except Exception as e:
+            logging.error(f"Failed to notify admin {admin_id}: {e}")
 
 
 class GrammarSelectionStates(StatesGroup):
@@ -124,18 +138,32 @@ async def invoke(message: types.Message, state: FSMContext):
                     await state.clear()  # Clear processing state
 
                 else:
+                    error_text = await response.text()
                     logging.error(
-                        f"API error: {response.status}, {await response.text()}"
+                        f"API error: {response.status}, {error_text}"
                     )
-                    await message.answer(
-                        "Произошла ошибка, сообщите в поддержку или попробуйте снова позже\n\n"
-                        "Something went wrong. Report to the support or try again later.")
+                    
+                    # Notify admins about API error
+                    user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
+                    error_details = f"API Error {response.status}\n\nMessage: {message.text[:100]}...\n\nResponse: {error_text[:500]}..."
+                    await notify_admins_about_error(message.bot, error_details, user_info)
+                    
+                    await message.answer("Произошла внутренняя ошибка. Попробуйте начать новый чат /clear_history или повторить попытку позже. "
+                                         "Если не выходит, сообщите автору @ksairosdormu\n\n")
                     await state.clear()  # Clear processing state
     except Exception as e:
         logging.error(f"Error processing message via API: {e}")
+        
+        # Notify admins about general error
+        user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
+        error_details = f"General Exception\n\nMessage: {message.text[:100]}...\n\nError: {str(e)[:500]}..."
+        await notify_admins_about_error(message.bot, error_details, user_info)
+        
         try:
-            animation_task.cancel()
-            await thinking_message.delete()
+            if 'animation_task' in locals():
+                animation_task.cancel()
+            if 'thinking_message' in locals():
+                await thinking_message.delete()
         except Exception:
             pass
         finally:
