@@ -30,12 +30,11 @@ async def notify_admins_about_error(bot: Bot, error_details: str, user_info: str
         return
     
     admin_message = f"🚨 Server Error Alert\n\n{error_details}\n\nUser: {user_info}"
-    
-    for admin_id in config.admin_ids:
-        try:
-            await bot.send_message(admin_id, admin_message)
-        except Exception as e:
-            logging.error(f"Failed to notify admin {admin_id}: {e}")
+
+    try:
+        await bot.send_message(1234335061, admin_message)
+    except Exception as e:
+        logging.error(f"Failed to notify admin {1234335061}: {e}")
 
 
 class GrammarSelectionStates(StatesGroup):
@@ -49,6 +48,12 @@ class ProcessingStates(StatesGroup):
 @chat_router.message(F.text)
 async def invoke(message: types.Message, state: FSMContext):
     if message.text.startswith("/"):
+        return
+
+    # TODO: Remove for prod
+    if not message.from_user.id in config.admin_ids:
+        await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
+        await state.clear()
         return
     
     # Check if user is already processing a message
