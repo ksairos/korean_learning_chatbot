@@ -53,12 +53,6 @@ User → Telegram → Bot → API → LLM Agents → Vector DB
 - **Troubleshooting**: Common issues and solutions
 - **Contact Information**: Support and feedback channels
 
-#### Vocabulary Handler (handlers/vocab.py)
-- **Dictionary Integration**: Korean dictionary lookup via krdict API
-- **Word Search**: Korean word definitions and examples
-- **Pronunciation**: Romanization and pronunciation guides
-- **Learning Features**: Word saving and review functionality
-
 ### Interactive Components
 
 #### Keyboards (keyboards/)
