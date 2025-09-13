@@ -97,11 +97,11 @@ async def retrieve_grammars_tool(
             # llm_filter_prompt.append(f"{i}. {doc}")
 
         llm_filter_agent = Agent(
-            model="openai:gpt-4.1-mini",
+            model="openai:gpt-4.1",
             instrument=True,
             output_type=List[int],
             instructions="""
-                Based on the USER QUERY select appropriate search results from the GRAMMAR LIST, and output their index only
+                You're a search filter agent. Select all relevant search results from the GRAMMAR LIST, based on the USER QUERY, and output their index only in a list
             """
         )
 

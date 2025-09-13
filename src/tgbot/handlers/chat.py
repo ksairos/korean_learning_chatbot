@@ -5,6 +5,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.exceptions import TelegramBadRequest
 
 import aiohttp
 import logging
@@ -192,19 +193,26 @@ async def handle_grammar_selection(callback: types.CallbackQuery, state: FSMCont
             response_message_id = data.get("response_message_id")
             
             if response_message_id:
+                # Edit the existing response message, not the options message
                 try:
-                    response_msg = await callback.message.edit_text(formatted_response)
-                    await state.update_data(response_message_id=response_msg.message_id)
-                # Delete the previous message and send a new one
+                    await callback.bot.edit_message_text(
+                        text=formatted_response,
+                        chat_id=callback.message.chat.id,
+                        message_id=response_message_id
+                    )
+
+                except TelegramBadRequest:
+                    # If the same button is pressed, do nothing
+                    pass
+
                 except Exception as e:
                     logging.warning(f"Failed to edit message {response_message_id}: {e}")
-                    # await callback.bot.delete_message(
-                    #     chat_id=callback.message.chat.id,
-                    #     message_id=response_message_id
-                    # )
-                    # response_msg = await callback.message.answer(formatted_response)
-                    # await state.update_data(response_message_id=response_msg.message_id)
-
+                    await callback.bot.delete_message(
+                        chat_id=callback.message.chat.id,
+                        message_id=response_message_id
+                    )
+                    response_msg = await callback.message.answer(formatted_response)
+                    await state.update_data(response_message_id=response_msg.message_id)
             else:
                 # Send new response message and store its ID
                 response_msg = await callback.message.answer(formatted_response)

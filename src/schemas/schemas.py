@@ -91,3 +91,4 @@ class RouterAgentResult(BaseModel):
         "thinking_grammar_answer",
         "casual_answer",
     ] = "thinking_grammar_answer"
+    short_reasoning: str
