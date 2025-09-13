@@ -30,7 +30,7 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     
     # Notify admins that the bot has started
-    await broadcaster.broadcast(bot, admin_ids, "The bot is launched")
+    await broadcaster.broadcast(bot, [1234335061], "The bot is launched")
 
 
 def register_global_middlewares(dp: Dispatcher, config: Config, session_pool=None):
