@@ -10,20 +10,18 @@ A sophisticated **multi-agent Korean language learning chatbot** powered by LLMs
 ### Multi-Agent Intelligence
 - **Router Agent**: Intelligently classifies user messages into appropriate response types
 - **HyDE Agent**: Enhances queries using Hypothetical Document Embeddings for better search
-- **Thinking Grammar Agent**: Provides detailed explanations with RAG-based document retrieval
+- **Grammar Agent**: Provides detailed explanations with RAG-based document retrieval
 - **System Agent**: Handles casual conversations and general bot interactions
+- **Direct Grammar Search** (not an agent, but important): Provides direct grammar search functionality
 
 ### Advanced Search Capabilities
 - **Hybrid Vector Search**: Combines dense embeddings, sparse (BM25), and late interaction models
-- **Semantic Grammar Search**: Find Korean grammar patterns by meaning or examples
-- **Korean Dictionary Integration**: Built-in word lookup with pronunciation and examples
 - **Reciprocal Rank Fusion (RRF)**: Optimal result ranking across multiple search methods
 
 ### Rich User Experience
 - **Interactive Telegram Interface**: Modern bot with inline keyboards and state management
 - **Grammar Selection Flow**: Multi-step interactive selection for precise results
 - **Conversation History**: Persistent chat history with selective clearing
-- **Admin Panel**: User management and broadcasting capabilities
 
 ### Robust Architecture
 - **Async/Await Throughout**: High-performance asynchronous processing
@@ -39,14 +37,13 @@ graph TD
     A[User] --> B[Telegram Bot]
     B --> C[FastAPI Backend]
     C --> D[Router Agent]
-    D --> E[HyDE Agent]
+    D --> E[Direct Search with HyDE]
     D --> F[Thinking Grammar Agent]
     D --> G[System Agent]
     E --> H[Qdrant Vector DB]
     F --> H
     F --> I[PostgreSQL]
     G --> I
-    B --> I
 ```
 
 ### Core Components
@@ -62,18 +59,17 @@ graph TD
    - OpenAI integration and observability
 
 3. **Multi-Agent LLM System** (`src/llm_agent/`)
-   - Pydantic AI framework for agent coordination
+   - PydanticAI framework for agent coordination
    - Specialized agents for different response types
    - RAG-based document retrieval with dependency injection
 
 4. **Vector Database** (`src/qdrant_db/`)
    - Multiple embedding models and collections
    - Hybrid search with dense, sparse, and late interaction
-   - Optimized for Korean language content
 
 5. **PostgreSQL Database** (`src/db/`)
-   - User management with BigInteger Telegram IDs
-   - Message history stored as binary blobs
+   - User management
+   - Message history
    - Async SQLAlchemy ORM with migrations
 
 ## 🛠️ Technology Stack
@@ -161,13 +157,6 @@ Simply type Korean grammar patterns or questions:
 - **Meaning search**: "Korean future tense", "how to say 'want to'"
 - **Example search**: "가고 싶어요" (finds the "고 싶다" pattern)
 - **Questions**: "What's the difference between 는/은 and 이/가?"
-
-### Admin Features (Admin users only)
-
-- `/add_user <user_id>` - Add user to system
-- `/list_users` - Show registered users
-- `/broadcast <message>` - Send message to all users
-- `/stats` - Show usage statistics
 
 ## 🔧 Development
 
