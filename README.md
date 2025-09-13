@@ -9,7 +9,6 @@ A sophisticated **multi-agent Korean language learning chatbot** powered by LLMs
 
 ### Multi-Agent Intelligence
 - **Router Agent**: Intelligently classifies user messages into appropriate response types
-- **HyDE Agent**: Enhances queries using Hypothetical Document Embeddings for better search
 - **Grammar Agent**: Provides detailed explanations with RAG-based document retrieval
 - **System Agent**: Handles casual conversations and general bot interactions
 - **Direct Grammar Search** (not an agent, but important): Provides direct grammar search functionality
@@ -236,14 +235,6 @@ docker compose up --scale api=2 --scale tgbot=1
 - **Staging**: Full Docker deployment with external databases
 - **Production**: Kubernetes or Docker Swarm with monitoring
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow code style guidelines (ruff, type hints, async patterns)
-4. Add tests for new functionality
-5. Submit pull request with detailed description
-
 ### Code Standards
 
 - **Type Hints**: All functions must have complete type annotations
@@ -259,17 +250,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [HowToStudyKorean.com](https://howtostudykorean.com) for comprehensive lesson content
-- [Aiogram](https://github.com/aiogram/aiogram) for excellent Telegram bot framework
-- [Qdrant](https://qdrant.tech) for high-performance vector search
-- [Pydantic AI](https://ai.pydantic.dev) for modern agent framework
-
-## 🔗 Links
-
-- **Documentation**: [docs/](docs/) directory
-- **API Reference**: Available at `/docs` endpoint when running
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
-
----
-
-**LazyHangeul** - Making Korean language learning accessible through AI 🇰🇷✨
