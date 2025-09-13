@@ -6,7 +6,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.params import Depends
 from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, ModelRequest
+from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, ModelRequest, UserPromptPart
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.agent import AgentRunResult
 from qdrant_client import AsyncQdrantClient
@@ -161,8 +161,10 @@ async def process_message(
                     with local_logfire.span("update_message_history"):
                         new_messages = []
 
-                        user_message = next(
-                            msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest))
+                        # user_message = next(
+                        #     msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest))
+
+                        user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
 
                         formatted_response = grammar_entry_to_markdown(response["llm_response"][0].model_dump())
                         model_response = ModelResponse(parts=[TextPart(content=formatted_response, part_kind="text")])
@@ -182,9 +184,10 @@ async def process_message(
                     with local_logfire.span("update_message_history"):
                         new_messages = []
 
-                        user_message = next(
-                            msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest)
-                        )
+                        # user_message = next(
+                        #     msg for msg in query_rewriter_response.new_messages() if isinstance(msg, ModelRequest)
+                        # )
+                        user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
 
                         model_message = f"Найдено {len(retrieved_grammars)} грамматик по вашему запросу. Выберите одну:\n"
                         for i, grammar in enumerate(retrieved_grammars):
@@ -228,7 +231,11 @@ async def process_message(
 
         # Update chat history with new messages
         with local_logfire.span("update_message_history"):
-            new_messages = thinking_grammar_response.new_messages()
+            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
+            model_response = ModelResponse(parts=[TextPart(content=thinking_grammar_response.output)])
+
+            # new_messages = thinking_grammar_response.new_messages()
+            new_messages = [user_message, model_response]
             background_tasks.add_task(update_message_history, session, message.user, new_messages)
             local_logfire.info(f"new_messages: {new_messages}")
 
@@ -248,7 +255,12 @@ async def process_message(
         local_logfire.info("System agent response: {response}", response=casual_response.output)
 
         with local_logfire.span("update_message_history"):
-            new_messages = casual_response.new_messages()
+            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
+            model_response = ModelResponse(parts=[TextPart(content=casual_response.output)])
+
+            # new_messages = casual_response.new_messages()
+            new_messages = [user_message, model_response]
+
             background_tasks.add_task(update_message_history, session, message.user, new_messages)
             local_logfire.info(f"new_messages: {new_messages}")
 
