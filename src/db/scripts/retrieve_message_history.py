@@ -47,7 +47,7 @@ def retrieve_message_history(user_id: int) -> list[ModelMessage]:
             chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
             
         # Print the parsed messages for debugging
-        pprint(chat_history, expand_all=True)
+        pprint([message.parts[0].content for message in chat_history])
         return chat_history
 
 if __name__ == '__main__':

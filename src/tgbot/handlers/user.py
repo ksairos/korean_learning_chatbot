@@ -6,7 +6,7 @@ from chatgpt_md_converter import telegram_format
 
 from src.db.crud import add_user, clear_chat_history
 from src.schemas.schemas import TelegramUser
-from src.db.database import get_db
+from src.db.database import async_session
 from src.tgbot.misc.utils import send_admin_message
 
 user_router = Router()
@@ -53,7 +53,7 @@ async def give_bot_access(message: Message):
     )
     
     try:
-        async for session in get_db():
+        async with async_session() as session:
             await add_user(session=session, user=user)
             user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
             await send_admin_message(message.bot, f"{user_info} получил доступ к боту", "🙋🆕 New User")
@@ -76,7 +76,7 @@ async def clear_user_history(message: Message, state: FSMContext):
     )
     
     try:
-        async for session in get_db():
+        async with async_session() as session:
             await clear_chat_history(session, user)
             
         # Clear any active FSM state as well

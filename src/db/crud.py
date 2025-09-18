@@ -66,6 +66,30 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
 
     return chat_history
 
+async def get_full_message_history(session: AsyncSession, user_id: int) -> list[ModelMessage]:
+    """
+    Get message history by using chat ID
+    Args:
+        session: Database session
+        user_id: Telegram user id
+    """
+    user_model = await session.get(UserModel, user_id)
+    chat_history: list[ModelMessage] = []
+
+    recent = (
+        await session.execute(
+            user_model.messages.
+            order_by(desc(MessageBlobModel.created_at)).
+            limit(10)
+        )
+    ).scalars().all()
+
+    for turn in reversed(recent):
+        # print(turn.created_at)
+        chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
+
+    return [message.parts[0].content for message in chat_history]
+
 
 async def update_message_history(
         session: AsyncSession,
@@ -135,7 +159,7 @@ async def delete_chat_history(
     return deleted_count
 
 
-async def clear_chat_history(session: AsyncSession, user: TelegramUser) -> int:
+async def clear_chat_history(session: AsyncSession, user: TelegramUser):
     """
     Mark all user's messages as inactive (soft delete for chat clearing)
     Returns the number of messages marked as inactive
@@ -147,7 +171,7 @@ async def clear_chat_history(session: AsyncSession, user: TelegramUser) -> int:
     )
     
     await session.commit()
-    return result.rowcount()
+    return result.rowcount
 
 
 async def deactivate_last_grammar_selection(session: AsyncSession, user: TelegramUser) -> bool:
