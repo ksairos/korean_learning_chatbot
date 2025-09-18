@@ -12,7 +12,7 @@ import logging
 
 from src.config.settings import Config
 from src.schemas.schemas import TelegramMessage, TelegramUser
-from src.tgbot.misc.utils import animate_thinking
+from src.tgbot.misc.utils import animate_thinking, send_admin_message
 from src.utils.json_to_telegram_md import grammar_entry_to_markdown, custom_telegram_format
 from src.db.crud import update_message_history, deactivate_last_grammar_selection
 from src.db.database import async_session
@@ -28,7 +28,7 @@ async def notify_admins_about_error(bot: Bot, error_details: str, user_info: str
     """Notify all admins about server errors."""
     if not config.admin_ids:
         return
-    
+
     admin_message = f"🚨 Server Error Alert\n\n{error_details}\n\nUser: {user_info}"
 
     try:
@@ -51,10 +51,10 @@ async def invoke(message: types.Message, state: FSMContext):
         return
 
     # TODO: Remove for prod
-    if not message.from_user.id in config.admin_ids:
-        await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
-        await state.clear()
-        return
+    # if not message.from_user.id in config.admin_ids:
+    #     await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
+    #     await state.clear()
+    #     return
     
     # Check if user is already processing a message
     current_state = await state.get_state()
@@ -139,7 +139,7 @@ async def invoke(message: types.Message, state: FSMContext):
                         await state.clear()  # Clear processing state
 
                 elif response.status == 403:
-                    await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
+                    await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа (@ksairosdormu) или попробуйте /start еще раз")
                     await state.clear()  # Clear processing state
 
                 else:
@@ -147,12 +147,13 @@ async def invoke(message: types.Message, state: FSMContext):
                     logging.error(
                         f"API error: {response.status}, {error_text}"
                     )
-                    
+
                     # Notify admins about API error
-                    user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
+                    user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})\n\n"
                     error_details = f"API Error {response.status}\n\nMessage: {message.text[:100]}...\n\nResponse: {error_text[:500]}..."
-                    await notify_admins_about_error(message.bot, error_details, user_info)
-                    
+                    error_message = user_info + error_details
+                    await send_admin_message(message.bot, error_message, "🚨 Error")
+
                     await message.answer("Произошла внутренняя ошибка. Попробуйте начать новый чат /clear_history или повторить попытку позже. "
                                          "Если не выходит, сообщите автору @ksairosdormu\n\n")
                     await state.clear()  # Clear processing state
@@ -160,9 +161,11 @@ async def invoke(message: types.Message, state: FSMContext):
         logging.error(f"Error processing message via API: {e}")
         
         # Notify admins about general error
-        user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
-        error_details = f"General Exception\n\nMessage: {message.text[:100]}...\n\nError: {str(e)[:500]}..."
-        await notify_admins_about_error(message.bot, error_details, user_info)
+        user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})\n\n"
+        error_details = f"<Exception\nUser Message: {message.text[:100]}...\nError: {str(e)[:500]}..."
+        error_message = user_info + error_details
+        await send_admin_message(message.bot, error_message, "🚨 Error")
+        # await notify_admins_about_error(message.bot, error_details, user_info)
         
         try:
             if 'animation_task' in locals():

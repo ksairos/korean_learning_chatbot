@@ -20,15 +20,13 @@ def session_scope():
 
 
 def delete_user(user_id: int):
-    """Delete all message history for a specific chat ID."""
+    """Delete the user by ID"""
     with session_scope() as session:
-        # Delete all messages for the specified chat_id
         session.execute(
             delete(UserModel).where(UserModel.id == user_id)
         )
-
-        print(f"Successfully deleted user of ID {user_id}")
+        print(f"Successfully deleted user of ID {user_id}.")
 
 
 if __name__ == "__main__":
-    delete_user(509844337)
+    delete_user(388262301)

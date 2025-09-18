@@ -10,12 +10,12 @@ from aiogram.client.default import DefaultBotProperties
 from src.config.settings import Config
 from src.tgbot.handlers import routers_list
 from src.tgbot.middlewares.config import ConfigMiddleware
-from src.tgbot.services import broadcaster
+from src.tgbot.misc.utils import send_admin_message
 
 
 async def on_startup(bot: Bot, admin_ids: list[int]):
     # Set up the main menu button that appears next to the message input field
-    from aiogram.types import BotCommand, BotCommandScopeDefault
+    from aiogram.types import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
     
     # Сюда добавляются команды для кнопки Menu (слева от поля ввода)
     commands = [
@@ -24,13 +24,24 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
         BotCommand(command="clear_history", description="Clear chat history")
     ]
 
+    admin_commands = [
+        BotCommand(command="help", description="Show help information"),
+        BotCommand(command="users", description="List all users in the DB"),
+        BotCommand(command="status", description="Show bot and system status"),
+        BotCommand(command="deleteuser", description="Delete user by ID"),
+    ]
+
     # Устанавливаем команды в определенных чатах (все чаты)
     # Если выбрать scope=BotCommandScopeChat, то команды будут доступны только в определенных чатах
     # Если выбрать scope=BotCommandScopeAllPrivateChats, то команды будут доступны во всех чатах с ботом
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    for admin_id in admin_ids:
+        await bot.set_my_commands(
+            admin_commands, scope=BotCommandScopeChat(chat_id=admin_id)
+        )
     
     # Notify admins that the bot has started
-    await broadcaster.broadcast(bot, [1234335061], "The bot is launched")
+    await send_admin_message(bot, "The bot is up", prefix="✅")
 
 
 def register_global_middlewares(dp: Dispatcher, config: Config, session_pool=None):

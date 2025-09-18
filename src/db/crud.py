@@ -46,10 +46,10 @@ async def get_message_history(session: AsyncSession, user: TelegramUser) -> list
     user_model = await session.get(UserModel, user.user_id)
     chat_history: list[ModelMessage] = []
 
-    if not user:
-        logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
-        await add_user(session, user)
-        return chat_history
+    # if not user:
+    #     logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
+    #     await add_user(session, user)
+    #     return chat_history
 
     recent = (
         await session.execute(
@@ -82,21 +82,21 @@ async def update_message_history(
     user_model = await session.get(UserModel, user.user_id)
     chat_history = []
 
-    if not user_model:
-        logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
-        await add_user(session, user)
-        user_model = await session.get(UserModel, user.user_id)
+    # if not user_model:
+    #     logfire.error(f"Chat {user.user_id} doesn't exist, adding new user")
+    #     await add_user(session, user)
+    #     user_model = await session.get(UserModel, user.user_id)
 
-    else:
-        recent = (
-            await session.execute(
-                user_model.messages.
-                order_by(desc(MessageBlobModel.created_at))
-            )
-        ).scalars().all()
+    # else:
+    recent = (
+        await session.execute(
+            user_model.messages.
+            order_by(desc(MessageBlobModel.created_at))
+        )
+    ).scalars().all()
 
-        for turn in reversed(recent):
-            chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
+    for turn in reversed(recent):
+        chat_history.extend(ModelMessagesTypeAdapter.validate_json(turn.data))
 
 
     # Serialize new_messages to bytes for storage
@@ -147,7 +147,7 @@ async def clear_chat_history(session: AsyncSession, user: TelegramUser) -> int:
     )
     
     await session.commit()
-    return result.rowcount
+    return result.rowcount()
 
 
 async def deactivate_last_grammar_selection(session: AsyncSession, user: TelegramUser) -> bool:
@@ -192,3 +192,20 @@ async def get_user_ids(session: AsyncSession):
     users = await session.scalars(select(UserModel))
     ids = [row.id for row in users.all()]
     return ids
+
+
+async def get_all_users(session: AsyncSession) -> list[UserModel]:
+    """
+    Get all users from the database with their details
+    """
+    result = await session.execute(select(UserModel).order_by(UserModel.created_at))
+    return list(result.scalars().all())
+
+
+async def delete_user_by_id(session: AsyncSession, user_id: int):
+    """
+    Delete a user by their ID along with all their messages
+    Returns True if user was deleted, False if user not found
+    """
+    result = await session.execute(delete(UserModel).where(UserModel.id == user_id))
+    return result.rowcount
