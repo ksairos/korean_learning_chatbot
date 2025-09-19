@@ -29,6 +29,7 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
         BotCommand(command="users", description="List all users in the DB"),
         BotCommand(command="status", description="Show bot and system status"),
         BotCommand(command="deleteuser", description="Delete user by ID"),
+        BotCommand(command="history", description="Get user chat history by ID"),
     ]
 
     # Устанавливаем команды в определенных чатах (все чаты)

@@ -5,7 +5,7 @@ from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from src.db.crud import add_user, get_all_users, delete_user_by_id
+from src.db.crud import add_user, get_all_users, delete_user_by_id, get_full_message_history
 from src.schemas.schemas import TelegramUser
 from src.tgbot.filters.admin import AdminFilter
 from src.db.database import async_session
@@ -91,6 +91,49 @@ async def delete_user(message: Message):
         await message.reply(escape_markdown_v2(f"❌ Error deleting user: {str(e)}"))
 
 
+@admin_router.message(Command("history"))
+async def get_user_history(message: Message):
+    """Get message history for a specific user by their ID"""
+    try:
+        command_parts = message.text.split()
+        if len(command_parts) != 2:
+            await message.reply("Usage: /history <user_id>\nExample: /history 123456789")
+            return
+        
+        user_id = int(command_parts[1])
+        
+        async with async_session() as session:
+
+            history = await get_full_message_history(session, user_id)
+            
+            if not history:
+                await message.reply(f"❌ No message history found for user {user_id}")
+                return
+            
+            response = f"📝 **Message History for User {user_id}:**\n\n"
+            
+            for i, msg_content in enumerate(history[-10:], 1):  # Show last 10 messages
+                # Truncate long messages for readability
+                content = str(msg_content)[:200]
+                if len(str(msg_content)) > 200:
+                    content += "..."
+                
+                response += f"{i}. {content}\n\n"
+            
+            # Split response if it's too long
+            if len(response) > 4000:
+                parts = [response[i:i+4000] for i in range(0, len(response), 4000)]
+                for part in parts:
+                    await message.reply(escape_markdown_v2(part), parse_mode="MarkdownV2")
+            else:
+                await message.reply(escape_markdown_v2(response), parse_mode="MarkdownV2")
+                
+    except ValueError:
+        await message.reply("❌ Invalid user ID. Please provide a valid number.")
+    except Exception as e:
+        await message.reply(f"❌ Error getting user history: {str(e)}")
+
+
 @admin_router.message(Command("status"))
 async def bot_status(message: Message):
     """Show bot and system status"""
@@ -142,6 +185,7 @@ async def admin_help(message: Message):
 
 /users - List all users in the database
 /deleteuser + user_id - Delete a user by their ID
+/history + user_id - Get message history for a user
 /status - Show bot and system status
 /help - Show this help message
     """
