@@ -19,7 +19,7 @@ router_agent = Agent(
     model="openai:gpt-4.1",
     instrument=True,
     output_type=RouterAgentResult,
-    model_settings=ModelSettings(temperature=0.2),
+    model_settings=ModelSettings(temperature=0.0),
     instructions="""
         You're the routing agent for a multi-agent assistant. Classify the user's message and choose the appropriate agent to handle the request:
         1. The user's request can be answered with the comprehensive explanation of a specific Korean grammar. Set message_type=direct_grammar_search
