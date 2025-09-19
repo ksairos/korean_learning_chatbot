@@ -18,6 +18,7 @@ config = Config()
 async def retrieve_grammars_tool(
         deps: RouterAgentDeps,
         search_query: str,
+        user_prompt: str,
         retrieve_top_k: int = 15
 ) -> list[GrammarEntryV2] | None:
     """
@@ -28,6 +29,7 @@ async def retrieve_grammars_tool(
         deps: the call context's dependencies
         search_query: запрос для поиска
         retrieve_top_k: количество RETRIEVED результатов
+        user_prompt: User original prompt
     """
 
     with logfire.span("Creating embedding for search_query = {search_query}", search_query=search_query):
@@ -87,7 +89,7 @@ async def retrieve_grammars_tool(
     else:
         result = [doc.content for doc in docs]
 
-        llm_filter_prompt = [f"USER_QUERY: '{search_query}'\n\nGRAMMAR LIST: "]
+        llm_filter_prompt = [f"USER_QUERY: '{user_prompt}'\n\nGRAMMAR LIST: "]
 
         for i, doc in enumerate(result):
             # ! For Version 1 grammars (full in json)
@@ -101,7 +103,9 @@ async def retrieve_grammars_tool(
             instrument=True,
             output_type=List[int],
             instructions="""
-                You're a search filter agent. Select all relevant search results from the GRAMMAR LIST, based on the USER QUERY, and output their index only in a list
+                You're a search filter in Korean grammar database. Select all relevant search results from the 
+                GRAMMAR LIST, based on the USER QUERY, and output their index only in a list. Focus on higher recall, 
+                rather than precision, but if none are relevant, output an empty list
             """
         )
 

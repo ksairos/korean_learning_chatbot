@@ -16,7 +16,7 @@ from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, hyde_agent
+from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent
 from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
@@ -136,7 +136,7 @@ async def process_message(
     )
 
     if router_agent_response.output.message_type == "direct_grammar_search":
-        query_rewriter_response = await hyde_agent.run(
+        query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=5),
         )
@@ -149,7 +149,7 @@ async def process_message(
 
         else:
 
-            retrieved_grammars = await retrieve_grammars_tool(deps, query_rewriter_response.output)
+            retrieved_grammars = await retrieve_grammars_tool(deps, query_rewriter_response.output, message.user_prompt)
             if retrieved_grammars:
 
                 # Provide a single grammar

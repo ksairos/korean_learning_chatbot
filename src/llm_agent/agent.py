@@ -19,7 +19,7 @@ router_agent = Agent(
     model="openai:gpt-4.1",
     instrument=True,
     output_type=RouterAgentResult,
-    model_settings=ModelSettings(temperature=0.0),
+    model_settings=ModelSettings(temperature=0.2),
     instructions="""
         You're the routing agent for a multi-agent assistant. Classify the user's message and choose the appropriate agent to handle the request:
         1. The user's request can be answered with the comprehensive explanation of a specific Korean grammar. Set message_type=direct_grammar_search
@@ -29,20 +29,20 @@ router_agent = Agent(
     """
 )
 
-# query_rewriter_agent = Agent(
-#     model="openai:gpt-4.1-mini",
-#     instrument=True,
-#     instructions="""
-#         Вы - мощный query rewriter в мульти-агентной системе по изучению корейской грамматики.
-#         - Если пользователь ввел запрос, содержащей грамматическую конструкцию, извлеките грамматическую форму
-#         или шаблон в её изначальном виде для дальнейшего поиска. К примеру, если запрос пользователя содержит
-#         "가고 싶어요", извлеките "고 싶다".
-#         - Если пользователь запрашивает грамматику на русском языке, используйте только её ("грамматика будущего
-#         времени в корейском" -> "будущее время")
-#
-#         Если ничего не найдено - выведите "None"
-#     """,
-# )
+query_rewriter_agent = Agent(
+    model="openai:gpt-4.1-mini",
+    instrument=True,
+    instructions="""
+        Вы - мощный Grammar Extractor в поисковой системе базы корейской грамматики.
+        - Если пользователь ввел запрос, содержащей грамматическую конструкцию, извлеките грамматическую форму
+        или шаблон в её изначальном виде для дальнейшего поиска. К примеру, если запрос пользователя содержит
+        "가고 싶어요", извлеките "고 싶다".
+        - Если пользователь запрашивает грамматику на русском языке, используйте только её ("грамматика будущего
+        времени в корейском" -> "будущее время")
+
+        Если ничего не найдено - выведите "None"
+    """,
+)
 
 hyde_agent = Agent(
     model="openai:gpt-4.1",
