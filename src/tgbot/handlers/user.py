@@ -24,7 +24,7 @@ async def user_start(message: Message):
 
     user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
     await send_admin_message(
-        message.bot, f"{user_info} стартовал бота", "🙋 Стартовал Бота"
+        message.bot, f"{user_info} стартовал бота", "⚠️ Стартовал Бота"
     )
 
     # IMPORTANT Uncomment to turn on user adding with /start
@@ -56,7 +56,7 @@ async def give_bot_access(message: Message):
         async with async_session() as session:
             await add_user(session=session, user=user)
             user_info = f"@{message.from_user.username or 'N/A'} (ID: {message.from_user.id})"
-            await send_admin_message(message.bot, f"{user_info} получил доступ к боту", "🙋🆕 New User")
+            await send_admin_message(message.bot, f"{user_info} получил доступ к боту", "🙋New User")
         await message.answer("Доступ предоставлен! Теперь вы можете использовать бота.")
     except Exception as e:
         await message.answer("Произошла ошибка при предоставлении доступа.")

@@ -25,8 +25,9 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
     ]
 
     admin_commands = [
-        BotCommand(command="help", description="Show help information"),
         BotCommand(command="users", description="List all users in the DB"),
+        BotCommand(command="clear_history", description="Clear chat history"),
+        BotCommand(command="help", description="Show help information"),
         BotCommand(command="status", description="Show bot and system status"),
         BotCommand(command="deleteuser", description="Delete user by ID"),
         BotCommand(command="history", description="Get user chat history by ID"),
