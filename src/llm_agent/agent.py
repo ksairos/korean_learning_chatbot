@@ -16,7 +16,7 @@ load_dotenv()
 config = Config()
 
 router_agent = Agent(
-    model="openai:gpt-4.1",
+    model="openai:gpt-4.1-mini",
     instrument=True,
     output_type=RouterAgentResult,
     model_settings=ModelSettings(temperature=0.0),
@@ -49,7 +49,7 @@ INPUT -> OUTPUT:
 )
 
 hyde_agent = Agent(
-    model="openai:gpt-4.1",
+    model="openai:gpt-4.1-mini",
     instrument=True,
     instructions="""
 Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, 
@@ -59,11 +59,11 @@ hyde_agent = Agent(
 )
 
 thinking_grammar_agent = Agent(
-    model="openai:gpt-4.1-mini",
+    model="openai:gpt-4.1",
     instrument=True,
     instructions="""
 ROLE: Ты - профессиональный агент в RAG системе в роли преподавателя корейского языка. 
-INSTRUCTION: Сформируйте краткий, четкий и точный ответ на запрос пользователя. Если требуется дополнительная информация, 
+INSTRUCTION: Сформируйте краткий, четкий и точный ответ на запрос пользователя. Если вопрос касается корейской грамматики, 
 используйте retrieve_docs tool для поиска контекста, который поможет ответить на вопрос пользователя. 
 
 ПРАВИЛО ИСПОЛЬЗОВАНИЯ retrieve_docs():
