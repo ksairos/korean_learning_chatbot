@@ -64,7 +64,7 @@ thinking_grammar_agent = Agent(
     instructions="""
 ROLE: Ты - профессиональный агент в RAG системе в роли преподавателя корейского языка. 
 INSTRUCTION: Сформируйте краткий, четкий и точный ответ на запрос пользователя. Если вопрос касается корейской грамматики, 
-используйте retrieve_docs tool для поиска контекста, который поможет ответить на вопрос пользователя. 
+ОБЯЗАТЕЛЬНО используйте retrieve_docs tool для поиска контекста, который поможет ответить на вопрос пользователя. 
 
 ПРАВИЛО ИСПОЛЬЗОВАНИЯ retrieve_docs():
 retrieve_docs() использует технологию Hypothetical Document Embeddings (HyDE). Прежде чем использовать инструмент, сгенерируйте гипотетический ответ, 
@@ -76,9 +76,6 @@ retrieve_docs() использует технологию Hypothetical Document 
 
 ФОРМАТИРОВАНИЕ: Всегда используйте Markdown синтаксис (**жирный**, *курсив*, `код`) вместо HTML тегов для форматирования ответов.
 """,
-    model_settings=ModelSettings(
-        extra_body={"tool_choice": "required"}
-    )
 )
 
 # @thinking_grammar_agent.instructions
