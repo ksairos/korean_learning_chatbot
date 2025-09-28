@@ -75,7 +75,10 @@ retrieve_docs() использует технологию Hypothetical Document 
 Если документов нет или они не подходят для ответа на запрос, постарайтесь ответить на запрос пользователя самостоятельно.
 
 ФОРМАТИРОВАНИЕ: Всегда используйте Markdown синтаксис (**жирный**, *курсив*, `код`) вместо HTML тегов для форматирования ответов.
-"""
+""",
+    model_settings=ModelSettings(
+        extra_body={"tool_choice": "required"}
+    )
 )
 
 # @thinking_grammar_agent.instructions
