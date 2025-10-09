@@ -81,10 +81,30 @@ async def clear_user_history(message: Message, state: FSMContext):
             
         # Clear any active FSM state as well
         await state.clear()
-        await message.answer(f"История чата очищена!")
+        await message.answer("История чата очищена!")
             
     except Exception as e:
         await message.answer("Произошла ошибка, попробуйте снова")
         # Log the error
         import logging
         logging.error(f"Error clearing chat history for user {user.user_id}: {e}")
+
+
+@user_router.message(Command("grammar"))
+async def grammar_command(message: Message):
+    """Handle the /grammar command"""
+    await message.answer(
+        "Про какую грамматику ты хочешь узнать больше? Можешь написать её на корейском (прим.: 으니까) или примерное значение на русском (прим.: конструкции причины)."
+    )
+
+
+@user_router.message(Command("conversation"))
+async def conversation_command(message: Message):
+    """Handle the /conversation command"""
+    await message.answer(
+        "Представь, что я твой корейский друг, с которым можно вести диалог 😻\n\n"
+        "Можешь попросить меня исправлять ошибки или наоборот игнорировать их.\n\n"
+        "안녕하세요?\n"
+        "봇이라고 해요~ 반가워요!\n"
+        "이름이 뭐예요?"
+    )
