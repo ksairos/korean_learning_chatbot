@@ -119,7 +119,7 @@ async def retrieve_docs(ctx: RunContext[ThinkingGrammarAgentDeps], hyde_query: s
     # hyde_response = await hyde_agent.run(user_prompt=hyde_query)
     # search_query = hyde_response.output
 
-    retrieved_docs = await retrieve_docs_tool(ctx.deps, hyde_query)
+    retrieved_docs = await retrieve_docs_tool(ctx.deps, hyde_query, rerank_strategy="none")
     docs = ["RETRIEVED DOCS:"]
 
     for i, doc in enumerate(retrieved_docs):
