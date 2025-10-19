@@ -20,15 +20,16 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
     # Сюда добавляются команды для кнопки Menu (слева от поля ввода)
     commands = [
         BotCommand(command="start", description="Запустить бота"),
-        BotCommand(command="help", description="Помощь"),
-        BotCommand(command="grammar", description="Начать изучение грамматики"),
-        BotCommand(command="conversation", description="Начать практику"),
-        BotCommand(command="clear_history", description="Очистить историю чата")
+        BotCommand(command="help", description="Что я могу?"),
+        BotCommand(command="restart", description="Начать новый чат"),
+        BotCommand(command="grammar", description="Изучение грамматики"),
+        BotCommand(command="conversation", description="Разговорная практика"),
+        BotCommand(command="translate", description="Режим переводчика")
     ]
 
     admin_commands = [
         BotCommand(command="users", description="List all users in the DB"),
-        BotCommand(command="clear_history", description="Clear chat history"),
+        BotCommand(command="restart", description="Clear chat history"),
         BotCommand(command="help", description="Show help information"),
         BotCommand(command="status", description="Show bot and system status"),
         BotCommand(command="deleteuser", description="Delete user by ID"),

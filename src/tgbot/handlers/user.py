@@ -17,7 +17,7 @@ async def user_start(message: Message):
     await message.answer(
         telegram_format(
             "Приветствую! Я - LazyHangeul, ИИ ассистент в изучении корейской грамматики на базе OpenAI. "
-            "Помогу в поиске нужной грамматики или отвечу на вопросы связанные с ней /help\n\n"
+            "Помогу в поиске нужной грамматики или отвечу на вопросы связанные с ней. Подробно: /help\n\n"
             "В данный момент чатбот находится в разработке, чтобы получить доступ, обратитесь автору для получения доступа. \n\nТГ: @ksairosdormu"
         )
     )
@@ -64,9 +64,9 @@ async def give_bot_access(message: Message):
         logging.error(f"Error adding user {user.user_id}: {e}")
 
 
-@user_router.message(Command("clear_history"))
+@user_router.message(Command("restart"))
 async def clear_user_history(message: Message, state: FSMContext):
-    """Handle the /clear_history command"""
+    """Handle the /restart command"""
     user = TelegramUser(
         user_id=message.from_user.id,
         username=message.from_user.username,
@@ -81,7 +81,7 @@ async def clear_user_history(message: Message, state: FSMContext):
             
         # Clear any active FSM state as well
         await state.clear()
-        await message.answer("История чата очищена!")
+        await message.answer("История чата очищена! Чем я могу помочь?")
             
     except Exception as e:
         await message.answer("Произошла ошибка, попробуйте снова")
@@ -104,7 +104,7 @@ async def conversation_command(message: Message):
     await message.answer(
         "Представь, что я твой корейский друг, с которым можно вести диалог 😻\n\n"
         "Можешь попросить меня исправлять ошибки или наоборот игнорировать их.\n\n"
-        "안녕하세요?\n"
-        "봇이라고 해요~ 반가워요!\n"
-        "이름이 뭐예요?"
+        "- 안녕하세요?\n"
+        "- 봇이라고 해요~ 반가워요!\n"
+        "- 이름이 뭐예요?"
     )
