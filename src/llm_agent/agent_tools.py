@@ -19,7 +19,8 @@ async def retrieve_grammars_tool(
         deps: RouterAgentDeps,
         search_query: str,
         user_prompt: str,
-        retrieve_top_k: int = 15
+        retrieve_top_k: int = 15,
+        llm_filter: bool = True
 ) -> list[GrammarEntryV2] | None:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
@@ -30,6 +31,7 @@ async def retrieve_grammars_tool(
         search_query: запрос для поиска
         retrieve_top_k: количество RETRIEVED результатов
         user_prompt: User original prompt
+        llm_filter: Whether to use llm filter or not
     """
 
     with logfire.span("Creating embedding for search_query = {search_query}", search_query=search_query):
@@ -92,79 +94,82 @@ async def retrieve_grammars_tool(
     else:
         result = [doc.content for doc in docs]
 
-        llm_filter_prompt = [f"USER_QUERY: '{user_prompt}'\n\nGRAMMAR LIST: "]
+        if llm_filter:
+            llm_filter_prompt = [f"USER_QUERY: '{user_prompt}'\n\nGRAMMAR LIST: "]
 
-        for i, doc in enumerate(result):
-            # ! For Version 1 grammars (full in json)
-            llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+            for i, doc in enumerate(result):
+                # ! For Version 1 grammars (full in json)
+                llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
-            # ! For Version 2 grammars (MD)
-            # llm_filter_prompt.append(f"{i}. {doc}")
+                # ! For Version 2 grammars (MD)
+                # llm_filter_prompt.append(f"{i}. {doc}")
 
-        llm_filter_agent = Agent(
-            model="openai:gpt-4.1",
-            instrument=True,
-            output_type=List[int],
-            instructions="""
-You're a search filter in Korean grammar database. Select all relevant search results from the GRAMMAR LIST, 
-based on the USER QUERY, and output their index only in a list. Focus on higher recall, if the number of potential 
-results is more that 1, and higher precision if there is only 1 relevant result (i.e. it should be exactly what the 
-user is looking for. If none are relevant, output an empty list
+            llm_filter_agent = Agent(
+                model="openai:gpt-4.1",
+                instrument=True,
+                output_type=List[int],
+                instructions="""
+                    You're a search filter in Korean grammar database. Select all relevant search results from the GRAMMAR LIST, 
+                    based on the USER QUERY, and output their index only in a list. Focus on higher recall, if the number of potential 
+                    results is more that 1, and higher precision if there is only 1 relevant result (i.e. it should be exactly what the 
+                    user is looking for. If none are relevant, output an empty list
+                    
+                    Example 1 - high recall:
+                    ```
+                    USER_QUERY: 'грамматика будущего времени в корейском языке'
+                    GRAMMAR LIST: 
+                    0. V/A + -(으)ㄹ 것이다 - будущее время
+                    1. V + -겠- - будущее время (планы, намерения говорящего)
+                    2. A/V + -(으)ㄹ 때, N + 때 - - «когда…», «во время…»
+                    3. N + 에 - «в (какое-то время)»
+                    4. V + -(으)ㄹ - определительная форма глагола в будущем времени
+                    5. V/A + -(으)면서 - одновременность действий
+                    6. V/A + -었-, -았-, -였- - суффикс прошедшего времени
+                    
+                    OUTPUT: [0, 1, 4]
+                    ```
+                    
+                    Example 2 - higher precision
+                    ```
+                    USER_QUERY: 'грамматика 는 데'
+                    GRAMMAR LIST:
+                    0. N + 은/는 - выделительная частица
+                    1. N + 하고 - «с» (совместное действие)
+                    2. V + -는 동안(에) - «в течение…, пока…»
+                    3. V/A + -(으)ㄴ/는데 - «а», «но», вводит контраст, предысторию или контекст
+                    4. V + -는 것 - «делание», «то, что…», отглагольное существительное
+                    
+                    
+                    OUTPUT: [3]
+                    ```
+                    
+                    Example 3 - high precision, but none relevant:
+                    ```
+                    USER_QUERY: 'объясни использование 아/어 보이다'
+                    GRAMMAR LIST:
+                    0. 보다 - «чем»
+                    1. V + -(으)ㄹ까 보다 - «боюсь, что…», «волнуюсь, что…»
+                    2. V + -아/어 있다 - состояние, возникшее в результате действия
+                    3. V + -고 있다 - состояние одежды и внешнего вида
+                    4. 와/과 - «с», совместное действие
+                    
+                    OUTPUT: []
+                    ```
+                    """
+            )
 
-Example 1 - high recall:
-```
-USER_QUERY: 'грамматика будущего времени в корейском языке'
-GRAMMAR LIST: 
-0. V/A + -(으)ㄹ 것이다 - будущее время
-1. V + -겠- - будущее время (планы, намерения говорящего)
-2. A/V + -(으)ㄹ 때, N + 때 - - «когда…», «во время…»
-3. N + 에 - «в (какое-то время)»
-4. V + -(으)ㄹ - определительная форма глагола в будущем времени
-5. V/A + -(으)면서 - одновременность действий
-6. V/A + -었-, -았-, -였- - суффикс прошедшего времени
+            llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
+            filtered_doc_ids = llm_filter_response.output
 
-OUTPUT: [0, 1, 4]
-```
+            if filtered_doc_ids:
+                filtered_docs = [result[i] for i in filtered_doc_ids]
+                logfire.info(f"LLM filtered docs: {filtered_docs}")
+                return filtered_docs
 
-Example 2 - higher precision
-```
-USER_QUERY: 'грамматика 는 데'
-GRAMMAR LIST:
-0. N + 은/는 - выделительная частица
-1. N + 하고 - «с» (совместное действие)
-2. V + -는 동안(에) - «в течение…, пока…»
-3. V/A + -(으)ㄴ/는데 - «а», «но», вводит контраст, предысторию или контекст
-4. V + -는 것 - «делание», «то, что…», отглагольное существительное
-
-
-OUTPUT: [3]
-```
-
-Example 3 - high precision, but none relevant:
-```
-USER_QUERY: 'объясни использование 아/어 보이다'
-GRAMMAR LIST:
-0. 보다 - «чем»
-1. V + -(으)ㄹ까 보다 - «боюсь, что…», «волнуюсь, что…»
-2. V + -아/어 있다 - состояние, возникшее в результате действия
-3. V + -고 있다 - состояние одежды и внешнего вида
-4. 와/과 - «с», совместное действие
-
-OUTPUT: []
-```
-"""
-        )
-
-        llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-        filtered_doc_ids = llm_filter_response.output
-
-        if filtered_doc_ids:
-            filtered_docs = [result[i] for i in filtered_doc_ids]
-            logfire.info(f"LLM filtered docs: {filtered_docs}")
-            return filtered_docs
-
+            else:
+                return None
         else:
-            return None
+            return result
 
 
 async def retrieve_docs_tool(

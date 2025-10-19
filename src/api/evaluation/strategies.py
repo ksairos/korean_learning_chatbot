@@ -3,7 +3,7 @@ import logfire
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai import Agent
 
-from src.llm_agent.agent import hyde_agent, thinking_grammar_agent
+from src.llm_agent.agent import thinking_grammar_agent
 from src.llm_agent.agent_tools import retrieve_docs_tool
 from src.schemas.schemas import RouterAgentDeps, TelegramMessage, RetrievedDoc
 

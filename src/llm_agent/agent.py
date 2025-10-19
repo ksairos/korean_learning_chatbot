@@ -5,7 +5,7 @@ from src.config.settings import Config
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.settings import ModelSettings
 
-from src.llm_agent.agent_tools import retrieve_docs_tool
+from src.llm_agent.agent_tools import retrieve_docs_tool, retrieve_grammars_tool
 from src.schemas.schemas import (
     RouterAgentResult,
     ThinkingGrammarAgentDeps,
@@ -46,16 +46,6 @@ INPUT -> OUTPUT:
 объясни грамматику 는 동안 -> -는 동안
 расскажи мне про грамматику -으 면 -> -(으)면
 """,
-)
-
-hyde_agent = Agent(
-    model="openai:gpt-4.1-mini",
-    instrument=True,
-    instructions="""
-Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ, 
-который напрямую отвечает на этот вопрос/запрос. Текст должен быть кратким и содержать только необходимую информацию. 
-Уместите ответ в 2-3 предложениях. Если вопрос не связан с корейским языком или не имеет ответа, выведите "None".
-        """
 )
 
 thinking_grammar_agent = Agent(
@@ -120,6 +110,7 @@ async def retrieve_docs(ctx: RunContext[ThinkingGrammarAgentDeps], hyde_query: s
     # search_query = hyde_response.output
 
     retrieved_docs = await retrieve_docs_tool(ctx.deps, hyde_query, rerank_strategy="none")
+
     docs = ["RETRIEVED DOCS:"]
 
     for i, doc in enumerate(retrieved_docs):
@@ -166,3 +157,13 @@ system_agent = Agent(
 #     Focus on the essentials of the discussion and next steps
 #     """,
 # )
+# hyde_agent = Agent(
+#     model="openai:gpt-4.1-mini",
+#     instrument=True,
+#     instructions="""
+# Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ,
+# который напрямую отвечает на этот вопрос/запрос. Текст должен быть кратким и содержать только необходимую информацию.
+# Уместите ответ в 2-3 предложениях. Если вопрос не связан с корейским языком или не имеет ответа, выведите "None".
+#         """
+# )
+#
