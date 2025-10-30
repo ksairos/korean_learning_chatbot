@@ -109,3 +109,11 @@ async def conversation_command(message: Message):
         "- 봇이라고 해요~ 반가워요!\n"
         "- 이름이 뭐예요?"
     )
+
+
+@user_router.message(Command("translate"))
+async def translate_command(message: Message):
+    """Handle the /translate command"""
+    await message.answer(
+        "В этом режиме можешь присылать мне сообщения на русском, чтобы я перевел их на корейской и на корейском, чтобы увидеть перевод на русском"
+    )
