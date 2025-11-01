@@ -240,7 +240,7 @@ async def process_message(
             local_logfire.info(f"new_messages: {new_messages}")
 
         # "mode" will be "no_grammar" only if message type was converted from direct_grammar_search
-        if not mode == "no_grammar":
+        if not mode == "no_grammars":
             mode = "thinking_grammar_answer"
 
         return {"llm_response": thinking_grammar_response.output, "mode": mode}
