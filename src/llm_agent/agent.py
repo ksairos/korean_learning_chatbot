@@ -51,15 +51,21 @@ INPUT -> OUTPUT:
 thinking_grammar_agent = Agent(
     model="openai:gpt-4.1-mini",
     instrument=True,
+    model_settings=ModelSettings(parallel_tool_calls=True),
     instructions="""
 ROLE: Ты - профессиональный агент в RAG системе в роли преподавателя корейского языка.\n
 INSTRUCTION: Основываясь на истории чата с пользователем, сформируйте краткий, четкий и точный ответ на запрос пользователя. 
-Если вопрос касается корейской грамматики, ОБЯЗАТЕЛЬНО используйте retrieve_docs tool для поиска контекста, который поможет ответить на вопрос пользователя.\n
+Если вопрос касается корейской грамматики, ОБЯЗАТЕЛЬНО используйте ПАРАЛЛЕЛЬНО retrieve_docs и retrieve_grammars для поиска контекста, который поможет ответить на вопрос пользователя.\n
 \n
 ПРАВИЛО ИСПОЛЬЗОВАНИЯ retrieve_docs():\n
 retrieve_docs() использует технологию Hypothetical Document Embeddings (HyDE). Прежде чем использовать инструмент, сгенерируйте гипотетический ответ, 
 который напрямую отвечает на этот вопрос. Текст должен быть кратким и содержать только необходимую информацию. Уместите ответ в 2-3 предложениях. 
 Используйте ответ, чтобы найти наиболее подходящую информацию с помощью инструмента retrieve_docs()\n
+\n
+ПРАВИЛО ИСПОЛЬЗОВАНИЯ retrieve_grammars():\n
+Прежде чем использовать инструмент, извлеките из запроса грамматическую форму или шаблон в её изначальном виде для дальнейшего поиска. 
+Например, 가고 싶어요 -> -고 싶다, грамматика будущего времени в корейском -> будущее время, дательный падеж -> дательный падеж.
+Используйте выведенную грамматику, чтобы найти наиболее подходящую информацию с помощью инструмента retrieve_grammars()\n
 \n
 ВАЖНО:\n
 Если документов нет или они не подходят для ответа на запрос, постарайтесь ответить на запрос пользователя самостоятельно.\n
@@ -95,6 +101,26 @@ async def retrieve_docs(ctx: RunContext[ThinkingGrammarAgentDeps], hyde_query: s
 
     for i, doc in enumerate(retrieved_docs):
         docs.append(f"{i}. {doc.content["content"]}")
+
+    return "\n\n".join(docs)
+
+@thinking_grammar_agent.tool
+async def retrieve_grammars(ctx: RunContext[ThinkingGrammarAgentDeps], rewritten_query: str, user_prompt: str) -> str:
+    """
+    Инструмент по извлечению уроков по-корейскому языку и грамматике
+
+    Args:
+        ctx: Контекст с Deps
+        rewritten_query: гипотетический ответ на запрос пользователя
+        user_prompt: original user prompt
+    """
+
+    retrieved_docs = await retrieve_grammars_tool(ctx.deps, rewritten_query, user_prompt)
+
+    docs = ["RETRIEVED DOCS:"]
+
+    for i, doc in enumerate(retrieved_docs):
+        docs.append(f"{i}. {doc.content}")
 
     return "\n\n".join(docs)
 
