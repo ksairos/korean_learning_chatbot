@@ -130,7 +130,7 @@ async def invoke(message: types.Message, state: FSMContext):
 
 
                     elif mode == "no_grammars":
-                        await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Позвольте мне ответить самостоятельно~")
+                        await message.answer("К сожалению, я не смог найти подходящие грамматики в своей базе. Позвольте мне ответить самостоятельно:")
                         await message.answer(custom_telegram_format(llm_response))
                         await state.clear()  # Clear processing state
 
