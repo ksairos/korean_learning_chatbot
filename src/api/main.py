@@ -205,7 +205,7 @@ async def process_message(
                 return response
 
             else:
-                mode = "no_grammar"
+                mode = "no_grammars"
                 router_agent_response.output.message_type = "thinking_grammar_answer"
 
 

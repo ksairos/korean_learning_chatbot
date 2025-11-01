@@ -68,26 +68,6 @@ retrieve_docs() использует технологию Hypothetical Document 
 """,
 )
 
-conversation_agent = Agent(
-    model="openai:gpt-4.1",
-    instrument=True,
-    instructions="""
-Я практикую разговорный корейский, а ты - мой партнер по диалогу. Первым делом, узнай, какой у меня уровень. 
-Веди диалог, будь заинтересованным, и постоянно анализируй мои возможности по истории чата, чтобы подстраивать лексику и грамматику.
-Не используй слишком сложные слова и грамматику, если видишь, что у меня слабый уровень корейского. Главная задача - 
-закрепить знания и потренироваться в разговоре.
-"""
-)
-
-translation_agent = Agent(
-    model="openai:gpt-4.1",
-    instrument=True,
-    instructions="""
-You are a power Russian-Korean translator. Translate all Russian text to Korean, and Korean text to Russian. 
-Only output the translated text, keeping the original format. Don't include your own messages. 
-"""
-)
-
 # @thinking_grammar_agent.instructions
 # def add_docs(ctx: RunContext[list]) -> str:
 #     docs = ["RETRIEVED DOCS:"]
@@ -118,6 +98,26 @@ async def retrieve_docs(ctx: RunContext[ThinkingGrammarAgentDeps], hyde_query: s
 
     return "\n\n".join(docs)
 
+
+conversation_agent = Agent(
+    model="openai:gpt-4.1",
+    instrument=True,
+    instructions="""
+Я практикую разговорный корейский, а ты - мой партнер по диалогу. Первым делом, узнай, какой у меня уровень. 
+Веди диалог, будь заинтересованным, и постоянно анализируй мои возможности по истории чата, чтобы подстраивать лексику и грамматику.
+Не используй слишком сложные слова и грамматику, если видишь, что у меня слабый уровень корейского. Главная задача - 
+закрепить знания и потренироваться в разговоре.
+"""
+)
+
+translation_agent = Agent(
+    model="openai:gpt-4.1",
+    instrument=True,
+    instructions="""
+You are a power Russian-Korean translator. Translate all Russian text to Korean, and Korean text to Russian. 
+Only output the translated text, keeping the original format. Don't include your own messages. 
+"""
+)
 
 system_agent = Agent(
     model="openai:gpt-4.1-mini",
