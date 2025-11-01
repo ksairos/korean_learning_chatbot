@@ -16,7 +16,7 @@ load_dotenv()
 config = Config()
 
 async def retrieve_grammars_tool(
-        deps: RouterAgentDeps | ThinkingGrammarAgentDeps,
+        deps: RouterAgentDeps,
         search_query: str,
         user_prompt: str,
         retrieve_top_k: int = 15,
