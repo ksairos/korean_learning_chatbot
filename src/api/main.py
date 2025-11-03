@@ -16,7 +16,7 @@ from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent
+from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent, translation_agent, conversation_agent
 from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
@@ -271,6 +271,92 @@ async def process_message(
     else:
         local_logfire.error(f"Unknown message type: {router_agent_response.output.message_type}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@app.post("/translate")
+async def translate_message(
+    message: TelegramMessage,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db)
+):
+    """Translate Russian to Korean and Korean to Russian"""
+    local_logfire = logfire.with_tags(str(message.user.user_id))
+    local_logfire.info(f'Translation request: "{message.user_prompt}"')
+
+    # Check if user is registered
+    allowed_users = await get_user_ids(session)
+    if message.user.user_id not in allowed_users:
+        raise HTTPException(status_code=403, detail="User not registered")
+
+    # Get message history for context
+    message_history = await get_message_history(session, message.user)
+
+    try:
+        translation_response = await translation_agent.run(
+            user_prompt=message.user_prompt,
+            usage_limits=UsageLimits(request_limit=3),
+            message_history=message_history[-4:],  # Use last 4 messages for context
+        )
+        
+        local_logfire.info("Translation response: {response}", response=translation_response.output)
+
+        # Update chat history with translation request and response
+        with local_logfire.span("update_message_history"):
+            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
+            model_response = ModelResponse(parts=[TextPart(content=translation_response.output)])
+            
+            new_messages = [user_message, model_response]
+            background_tasks.add_task(update_message_history, session, message.user, new_messages)
+            local_logfire.info(f"new_messages: {new_messages}")
+
+        return {"translation": translation_response.output}
+
+    except Exception as e:
+        local_logfire.error(f"Translation error: {e}")
+        raise HTTPException(status_code=500, detail="Translation service error")
+
+
+@app.post("/conversation")
+async def conversation_message(
+    message: TelegramMessage,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_db)
+):
+    """Handle conversation practice messages"""
+    local_logfire = logfire.with_tags(str(message.user.user_id))
+    local_logfire.info(f'Conversation request: "{message.user_prompt}"')
+
+    # Check if user is registered
+    allowed_users = await get_user_ids(session)
+    if message.user.user_id not in allowed_users:
+        raise HTTPException(status_code=403, detail="User not registered")
+
+    # Get message history for context
+    message_history = await get_message_history(session, message.user)
+
+    try:
+        conversation_response = await conversation_agent.run(
+            user_prompt=message.user_prompt,
+            usage_limits=UsageLimits(request_limit=3),
+            message_history=message_history[-6:],  # Use last 6 messages for conversation context
+        )
+        
+        local_logfire.info("Conversation response: {response}", response=conversation_response.output)
+
+        # Update chat history with conversation
+        with local_logfire.span("update_message_history"):
+            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
+            model_response = ModelResponse(parts=[TextPart(content=conversation_response.output)])
+            
+            new_messages = [user_message, model_response]
+            background_tasks.add_task(update_message_history, session, message.user, new_messages)
+            local_logfire.info(f"new_messages: {new_messages}")
+
+        return {"response": conversation_response.output}
+
+    except Exception as e:
+        local_logfire.error(f"Conversation error: {e}")
+        raise HTTPException(status_code=500, detail="Conversation service error")
 
 
 # @app.post("/invoke_test")
