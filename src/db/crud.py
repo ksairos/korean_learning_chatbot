@@ -159,14 +159,14 @@ async def delete_chat_history(
     return deleted_count
 
 
-async def clear_chat_history(session: AsyncSession, user: TelegramUser):
+async def clear_chat_history(session: AsyncSession, user_id: int):
     """
     Mark all user's messages as inactive (soft delete for chat clearing)
     Returns the number of messages marked as inactive
     """
     result = await session.execute(
         update(MessageBlobModel)
-        .where(MessageBlobModel.user_id == user.user_id)
+        .where(MessageBlobModel.user_id == user_id)
         .values(is_active=False)
     )
     

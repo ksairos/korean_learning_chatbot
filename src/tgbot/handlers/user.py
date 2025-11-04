@@ -68,17 +68,10 @@ async def give_bot_access(message: Message):
 @user_router.message(Command("restart"))
 async def clear_user_history(message: Message, state: FSMContext):
     """Handle the /restart command"""
-    user = TelegramUser(
-        user_id=message.from_user.id,
-        username=message.from_user.username,
-        first_name=message.from_user.first_name,
-        last_name=message.from_user.last_name,
-        chat_id=message.chat.id
-    )
     
     try:
         async with async_session() as session:
-            await clear_chat_history(session, user)
+            await clear_chat_history(session, message.from_user.id)
             
         # Clear any active FSM state as well
         await state.clear()
@@ -88,13 +81,18 @@ async def clear_user_history(message: Message, state: FSMContext):
         await message.answer("Произошла ошибка, попробуйте снова")
         # Log the error
         import logging
-        logging.error(f"Error clearing chat history for user {user.user_id}: {e}")
+        logging.error(f"Error clearing chat history for user {message.from_user.id}: {e}")
 
 
 @user_router.message(Command("grammar"))
 async def grammar_command(message: Message, state: FSMContext):
     """Handle the /grammar command"""
     await state.clear()
+    try:
+        async with async_session() as session:
+            await clear_chat_history(session, message.from_user.id)
+    except:
+        pass
     await message.answer(
         "Про какую грамматику ты хочешь узнать больше? Можешь написать её на корейском (прим.: 으니까) или примерное значение на русском (прим.: конструкции причины)."
     )

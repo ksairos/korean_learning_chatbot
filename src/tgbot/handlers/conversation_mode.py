@@ -6,6 +6,8 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from src.config.settings import Config
+from src.db.crud import clear_chat_history
+from src.db.database import async_session
 from src.schemas.schemas import TelegramMessage, TelegramUser
 from src.tgbot.misc.states import ConversationState, TranslationState
 from src.tgbot.misc.utils import send_admin_message
@@ -20,23 +22,38 @@ CONVERSATION_API_URL = f"http://{config.fastapi_host}:{config.fastapi_port}/conv
 @conversation_router.message(Command("conversation"))
 async def conversation_command(message: Message, state: FSMContext):
     """Handle the /conversation command"""
-    await state.clear()
-    await state.set_state(ConversationState.active)
-    await message.answer(
-        "🗣️ Режим разговорной практики включен\n\n"
-        "Представь, что я твой корейский друг, с которым можно вести диалог 😻\n\n"
-        "Можешь попросить меня исправлять ошибки или наоборот игнорировать их.\n\n"
-        "- 안녕하세요?\n"
-        "- 봇이라고 해요~ 반가워요!\n"
-        "- 이름이 뭐예요?\n\n"
-        "Чтобы выйти: /exit"
-    )
+    try:
+        await state.clear()
+        await state.set_state(ConversationState.active)
+        async with async_session() as session:
+            await clear_chat_history(session, message.from_user.id)
+        await message.answer(
+            "🗣️ Режим разговорной практики включен\n\n"
+            "Представь, что я твой корейский друг, с которым можно вести диалог 😻\n\n"
+            "Можешь попросить меня исправлять ошибки или наоборот игнорировать их.\n\n"
+            "- 안녕하세요?\n"
+            "- 봇이라고 해요~ 반가워요!\n"
+            "- 이름이 뭐예요?\n\n"
+            "Чтобы выйти: /exit"
+        )
+
+    except Exception as e:
+        await message.answer("Произошла ошибка, попробуйте снова")
+
+        await send_admin_message(message.bot, e[:500], "🚨 Error")
+        logging.error(f"Error clearing chat history for user {message.from_user.id}: {e}")
 
 
 @conversation_router.message(Command("exit"), ConversationState.active)
 async def exit_conversation_mode(message: Message, state: FSMContext):
     """Exit conversation mode"""
     await state.clear()
+    try:
+        async with async_session() as session:
+            await clear_chat_history(session, message.from_user.id)
+    except:
+        pass
+
     await message.answer("Вы вышли из режима разговорной практики. Чем могу помочь с грамматикой?")
 
 
@@ -80,13 +97,13 @@ async def handle_conversation_message(message: Message):
     except aiohttp.ClientError as e:
         await message.answer("⚠️ Не удалось подключиться к серверу. Попробуйте позже")
 
-        await send_admin_message(message.bot, e[:500], "🚨 Error")
-        logging.error(f"Conversation API error: {response.status}")
+        await send_admin_message(message.bot, "Server Error", "🚨 Error")
+        logging.error(f"Conversation API error: {response.status}, \n\nClientError: {e}")
 
     except Exception as e:
 
         await message.answer("⚠️ Неизвестная ошибка. Попробуйте снова")
 
-        await send_admin_message(message.bot, e[:500], "🚨 Error")
+        await send_admin_message(message.bot, "Unknown Error", "🚨 Error")
         logging.error(f"Unexpected error in conversation handler: {e}")
 
