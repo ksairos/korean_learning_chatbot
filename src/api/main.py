@@ -138,7 +138,7 @@ async def process_message(
     if router_agent_response.output.message_type == "direct_grammar_search":
         query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
-            usage_limits=UsageLimits(request_limit=3),
+            usage_limits=UsageLimits(request_limit=2),
         )
         local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
 
@@ -224,7 +224,7 @@ async def process_message(
         thinking_grammar_response = await thinking_grammar_agent.run(
             user_prompt=message.user_prompt,
             deps=deps,
-            usage_limits=UsageLimits(request_limit=3),
+            usage_limits=UsageLimits(request_limit=2),
             message_history=message_history,
         )
         local_logfire.info("Thinking agent response: {response}", response=thinking_grammar_response.output, _tags=[""])
@@ -248,7 +248,7 @@ async def process_message(
     if router_agent_response.output.message_type == "casual_answer":
         casual_response = await system_agent.run(
             user_prompt=message.user_prompt,
-            usage_limits=UsageLimits(request_limit=3),
+            usage_limits=UsageLimits(request_limit=2),
             output_type=str,
             message_history=message_history[-2:],
         )
@@ -324,8 +324,8 @@ async def conversation_message(
     try:
         conversation_response = await conversation_agent.run(
             user_prompt=message.user_prompt,
-            usage_limits=UsageLimits(request_limit=3),
-            message_history=message_history[-6:],  # Use last 6 messages for conversation context
+            usage_limits=UsageLimits(request_limit=2),
+            message_history=message_history,
         )
         
         local_logfire.info("Conversation response: {response}", response=conversation_response.output)
