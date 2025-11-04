@@ -288,26 +288,13 @@ async def translate_message(
     if message.user.user_id not in allowed_users:
         raise HTTPException(status_code=403, detail="User not registered")
 
-    # Get message history for context
-    message_history = await get_message_history(session, message.user)
-
     try:
         translation_response = await translation_agent.run(
             user_prompt=message.user_prompt,
-            usage_limits=UsageLimits(request_limit=3),
-            message_history=message_history[-4:],  # Use last 4 messages for context
+            usage_limits=UsageLimits(request_limit=2),
         )
         
         local_logfire.info("Translation response: {response}", response=translation_response.output)
-
-        # Update chat history with translation request and response
-        with local_logfire.span("update_message_history"):
-            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
-            model_response = ModelResponse(parts=[TextPart(content=translation_response.output)])
-            
-            new_messages = [user_message, model_response]
-            background_tasks.add_task(update_message_history, session, message.user, new_messages)
-            local_logfire.info(f"new_messages: {new_messages}")
 
         return {"translation": translation_response.output}
 

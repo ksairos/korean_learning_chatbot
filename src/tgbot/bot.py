@@ -24,17 +24,18 @@ async def on_startup(bot: Bot, admin_ids: list[int]):
         BotCommand(command="restart", description="Начать новый чат"),
         BotCommand(command="grammar", description="Изучение грамматики"),
         BotCommand(command="conversation", description="Разговорная практика"),
-        BotCommand(command="translate", description="Режим переводчика")
+        BotCommand(command="translate", description="Режим переводчика"),
+        BotCommand(command="exit", description="Выйти из всех режимов"),
     ]
 
     admin_commands = [
         BotCommand(command="users", description="List all users in the DB"),
-        BotCommand(command="restart", description="Clear chat history"),
-        BotCommand(command="help", description="Show help information"),
         BotCommand(command="status", description="Show bot and system status"),
         BotCommand(command="deleteuser", description="Delete user by ID"),
         BotCommand(command="history", description="Get user chat history by ID"),
     ]
+
+    admin_commands.extend(commands)
 
     # Устанавливаем команды в определенных чатах (все чаты)
     # Если выбрать scope=BotCommandScopeChat, то команды будут доступны только в определенных чатах

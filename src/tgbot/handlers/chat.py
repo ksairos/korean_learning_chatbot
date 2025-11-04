@@ -13,6 +13,7 @@ import logging
 from src.config.settings import Config
 from src.schemas.schemas import TelegramMessage, TelegramUser
 from src.tgbot.misc.utils import animate_thinking, send_admin_message
+from src.tgbot.misc.states import TranslationState, ConversationState
 from src.utils.json_to_telegram_md import grammar_entry_to_markdown, custom_telegram_format
 from src.db.crud import update_message_history, deactivate_last_grammar_selection
 from src.db.database import async_session
@@ -50,6 +51,11 @@ async def invoke(message: types.Message, state: FSMContext):
     if message.text.startswith("/"):
         return
 
+    # Check current FSM state - don't process if in special modes
+    current_state = await state.get_state()
+    if current_state in [TranslationState.active.state, ConversationState.active.state]:
+        return
+
     # TODO: Remove for prod
     # if not message.from_user.id in config.admin_ids:
     #     await message.answer("Чтобы получить доступ, обратитесь автору для получения доступа: @ksairosdormu")
@@ -57,7 +63,6 @@ async def invoke(message: types.Message, state: FSMContext):
     #     return
     
     # Check if user is already processing a message
-    current_state = await state.get_state()
     if current_state == ProcessingStates.processing_message.state:
         return
     
