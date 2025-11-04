@@ -5,7 +5,7 @@ from src.config.settings import Config
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.settings import ModelSettings
 
-from src.llm_agent.agent_tools import retrieve_docs_tool, retrieve_grammars_tool
+from src.llm_agent.agent_tools import retrieve_docs_tool
 from src.schemas.schemas import (
     RouterAgentResult,
     ThinkingGrammarAgentDeps,
@@ -158,14 +158,5 @@ system_agent = Agent(
 #     Summarize this conversation, omitting small talk and unrelated topics.
 #     Focus on the essentials of the discussion and next steps
 #     """,
-# )
-# hyde_agent = Agent(
-#     model="openai:gpt-4.1-mini",
-#     instrument=True,
-#     instructions="""
-# Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ,
-# который напрямую отвечает на этот вопрос/запрос. Текст должен быть кратким и содержать только необходимую информацию.
-# Уместите ответ в 2-3 предложениях. Если вопрос не связан с корейским языком или не имеет ответа, выведите "None".
-#         """
 # )
 #

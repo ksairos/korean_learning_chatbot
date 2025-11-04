@@ -2,11 +2,11 @@ import logfire
 import os
 
 from aiogram import Bot
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Header
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.params import Depends
 from fastembed import SparseTextEmbedding, LateInteractionTextEmbedding
 from openai import AsyncOpenAI
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, ModelRequest, UserPromptPart
+from pydantic_ai.messages import ModelResponse, TextPart, ModelRequest, UserPromptPart
 from pydantic_ai.usage import UsageLimits
 from pydantic_ai.agent import AgentRunResult
 from qdrant_client import AsyncQdrantClient
@@ -17,12 +17,11 @@ from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
 from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent, translation_agent, conversation_agent
-from src.llm_agent.agent_tools import retrieve_grammars_tool, retrieve_docs_tool
+from src.llm_agent.agent_tools import retrieve_grammars_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
     RouterAgentResult,
     TelegramMessage,
-    GrammarEntryV2, RetrievedDoc
 )
 from src.utils.json_to_telegram_md import grammar_entry_to_markdown
 
@@ -85,7 +84,7 @@ try:
         cache_dir=cache_directory,
         local_files_only=True
     )
-except Exception as e:
+except Exception:
     late_interaction_model = LateInteractionTextEmbedding(config.late_interaction_model)
 
 

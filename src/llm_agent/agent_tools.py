@@ -217,7 +217,7 @@ async def retrieve_docs_tool(
             sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
             sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
 
-            local_logfire.info(f"Query embedded with sparse embeddings")
+            local_logfire.info("Query embedded with sparse embeddings")
 
             bm_25_prefetch = Prefetch(
                 query=sparse_vector_query,
@@ -228,7 +228,7 @@ async def retrieve_docs_tool(
 
         if rerank_strategy == "colbert":
             late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
-            local_logfire.info(f"Query embedded with ColBERT")
+            local_logfire.info("Query embedded with ColBERT")
 
 
     # Use hybrid search with bm25 amd OpenAI embeddings with RRF

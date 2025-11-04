@@ -6,7 +6,6 @@ Uses the synchronous database connection for direct DB access.
 
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from collections import Counter
 
 from src.db.database import get_sync_db
 from src.db.models import MessageBlobModel, UserModel

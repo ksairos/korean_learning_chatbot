@@ -7,6 +7,15 @@ from src.llm_agent.agent import thinking_grammar_agent
 from src.llm_agent.agent_tools import retrieve_docs_tool
 from src.schemas.schemas import RouterAgentDeps, TelegramMessage, RetrievedDoc
 
+hyde_agent = Agent(
+    model="openai:gpt-4.1-mini",
+    instrument=True,
+    instructions="""
+Ты - профессиональный преподаватель корейского языка. Учитывая вопрос пользователя, сгенерируйте гипотетический ответ,
+который напрямую отвечает на этот вопрос/запрос. Текст должен быть кратким и содержать только необходимую информацию.
+Уместите ответ в 2-3 предложениях. Если вопрос не связан с корейским языком или не имеет ответа, выведите "None".
+        """
+)
 
 class RagEvaluationStrategy:
     """Base class for RAG evaluation strategies"""

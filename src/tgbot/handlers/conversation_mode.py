@@ -9,7 +9,7 @@ from src.config.settings import Config
 from src.db.crud import clear_chat_history
 from src.db.database import async_session
 from src.schemas.schemas import TelegramMessage, TelegramUser
-from src.tgbot.misc.states import ConversationState, TranslationState
+from src.tgbot.misc.states import ConversationState
 from src.tgbot.misc.utils import send_admin_message
 from src.utils.json_to_telegram_md import custom_telegram_format
 

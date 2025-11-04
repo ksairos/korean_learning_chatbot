@@ -8,8 +8,6 @@
 2) Split MD with all grammars -> a folder of MD files
 """
 
-import json
-
 from src.utils.md_to_json import parse_entry_v1, parse_entry_v2
 
 
