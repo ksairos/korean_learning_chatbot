@@ -107,21 +107,21 @@ async def evaluate_rag_colbert(
 
 @router.post("/direct_search")
 async def direct_search_eval(user_prompt: str, strategy: str):
-    local_logfire = logfire.with_tags(strategy)
-    local_logfire.info(f'Query: {user_prompt}')
+    with local_logfire.span(f"Strategy: {strategy}"):
+        local_logfire.info(f'Query: {user_prompt}')
 
-    query = user_prompt
+        query = user_prompt
 
-    deps = await get_evaluation_deps(AsyncSession())
+        deps = await get_evaluation_deps(AsyncSession())
 
-    if not strategy == "no_rewriter":
-        query_rewriter_response = await query_rewriter_agent.run(
-            user_prompt=user_prompt,
-            usage_limits=UsageLimits(request_limit=1),
-        )
-        local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
-        query = query_rewriter_response.output
+        if not strategy == "no_rewriter":
+            query_rewriter_response = await query_rewriter_agent.run(
+                user_prompt=user_prompt,
+                usage_limits=UsageLimits(request_limit=1),
+            )
+            local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
+            query = query_rewriter_response.output
 
-    retrieved_grammars = await retrieve_grammars_tool(deps, query, user_prompt)
+        retrieved_grammars = await retrieve_grammars_tool(deps, query, user_prompt)
 
-    return {"retrieved_grammars": retrieved_grammars}
+        return {"retrieved_grammars": retrieved_grammars}
