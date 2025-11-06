@@ -1,11 +1,14 @@
 import logfire
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic_ai.usage import UsageLimits
 
 from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy
 from src.config.settings import Config
 from src.db.crud import get_user_ids
 from src.db.database import get_db
+from src.llm_agent.agent import query_rewriter_agent
+from src.llm_agent.agent_tools import retrieve_grammars_tool
 from src.schemas.schemas import RouterAgentDeps, TelegramMessage
 
 router = APIRouter(prefix="/evaluate", tags=["evaluation"])
@@ -100,3 +103,25 @@ async def evaluate_rag_colbert(
         session: AsyncSession = Depends(get_db),
 ):
     return await _run_evaluation_strategy("test5", message, retrieve_top_k, rerank_top_k, session)
+
+
+@router.post("/direct_search")
+async def direct_search_eval(user_prompt: str, strategy: str):
+    local_logfire = logfire.with_tags(strategy)
+    local_logfire.info(f'Query: {user_prompt}')
+
+    query = user_prompt
+
+    deps = await get_evaluation_deps(AsyncSession())
+
+    if not strategy == "no_rewriter":
+        query_rewriter_response = await query_rewriter_agent.run(
+            user_prompt=user_prompt,
+            usage_limits=UsageLimits(request_limit=1),
+        )
+        local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
+        query = query_rewriter_response.output
+
+    retrieved_grammars = await retrieve_grammars_tool(deps, query, user_prompt)
+
+    return {"retrieved_grammars": retrieved_grammars}

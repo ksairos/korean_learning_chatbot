@@ -275,7 +275,6 @@ async def process_message(
 @app.post("/translate")
 async def translate_message(
     message: TelegramMessage,
-    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db)
 ):
     """Translate Russian to Korean and Korean to Russian"""

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 - **Run bot**: `uv run python3 -m src.tgbot.bot`
 - **Run API**: `uv run fastapi dev src/api/main.py`
-- **Run all services**: `docker compose up`
+- **Run DB and vector DB services**: `docker compose up`
 - **Linting**: `ruff check .`
 - **DB migrations**: 
   - Apply: `alembic upgrade head`
@@ -27,7 +27,6 @@ This is a **multi-agent Korean language learning chatbot** with the following ar
 ### Agent System
 The bot uses **4 specialized agents**:
 - **Router Agent**: Classifies user messages into types (direct grammar search, thinking grammar answer, casual answer)
-- **HyDE Agent**: Rewrites queries for better vector search using Hypothetical Document Embeddings
 - **Thinking Grammar Agent**: Provides detailed explanations with RAG-based document retrieval
 - **System Agent**: Handles casual conversations and general bot interactions
 
