@@ -124,5 +124,4 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             query = query_rewriter_response.output
 
         retrieved_grammars = await eval_retrieve_grammars_tool(deps, query, user_prompt)
-        # retrieved_grammars = [{"grammar_name_kr": grammar.grammar_name_kr, "grammar_name_rus": grammar.grammar_name_rus} for grammar in retrieved_grammars]
         return retrieved_grammars

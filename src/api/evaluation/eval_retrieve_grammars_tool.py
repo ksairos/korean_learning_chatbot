@@ -48,7 +48,8 @@ async def eval_retrieve_grammars_tool(
         "embedding_generation_time": 0.0,
         "qdrant_query_time": 0.0,
         "qdrant_postprocessing_time": 0.0,
-        "llm_filter_time": 0.0
+        "llm_filter_time": 0.0,
+        "overall_time": 0.0
     }
     loop = asyncio.get_event_loop()
 
@@ -193,6 +194,7 @@ async def eval_retrieve_grammars_tool(
 
             llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
             processing_times["llm_filter_time"] = loop.time() - start_time  # End timer for LLM
+            processing_times["overall_time"] = sum(processing_times.values())
 
             filtered_doc_ids = llm_filter_response.output
 
