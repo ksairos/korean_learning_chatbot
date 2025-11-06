@@ -25,7 +25,7 @@ async def eval_retrieve_grammars_tool(
         user_prompt: str,
         retrieve_top_k: int = 15,
         llm_filter: bool = True
-) -> dict:  # Changed return type
+) -> dict:
     """
     Инструмент для извлечения грамматических конструкций на основе запроса пользователя.
     A tool for extracting grammatical constructions based on the user's query.
@@ -48,7 +48,7 @@ async def eval_retrieve_grammars_tool(
         "embedding_generation_time": 0.0,
         "qdrant_query_time": 0.0,
         "qdrant_postprocessing_time": 0.0,
-        "llm_filter_time": 0.0,  # Will be 0 if llm_filter is False
+        "llm_filter_time": 0.0
     }
     loop = asyncio.get_event_loop()
 
@@ -201,19 +201,19 @@ async def eval_retrieve_grammars_tool(
                 logfire.info(f"LLM filtered docs: {filtered_docs}")
                 # Modified return
                 return {
-                    "payload": filtered_docs,
+                    "retrieved_grammars": filtered_docs,
                     "processing_times": processing_times
                 }
 
             else:
                 # Modified return
                 return {
-                    "payload": None,
+                    "retrieved_grammars": None,
                     "processing_times": processing_times
                 }
         else:
             # Modified return (no LLM filter)
             return {
-                "payload": result,
+                "retrieved_grammars": result,
                 "processing_times": processing_times
             }
