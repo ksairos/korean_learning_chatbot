@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.usage import UsageLimits
 
+from src.api.evaluation.eval_retrieve_grammars_tool import eval_retrieve_grammars_tool
 from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy
 from src.config.settings import Config
 from src.db.crud import get_user_ids
@@ -122,6 +123,6 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
             query = query_rewriter_response.output
 
-        retrieved_grammars = await retrieve_grammars_tool(deps, query, user_prompt)
+        retrieved_grammars = await eval_retrieve_grammars_tool(deps, query, user_prompt)
         retrieved_grammars = [{"grammar_name_kr": grammar.grammar_name_kr, "grammar_name_rus": grammar.grammar_name_rus} for grammar in retrieved_grammars]
         return {"retrieved_grammars": retrieved_grammars}
