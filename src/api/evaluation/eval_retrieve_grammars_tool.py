@@ -210,7 +210,7 @@ async def eval_retrieve_grammars_tool(
             else:
                 # Modified return
                 return {
-                    "retrieved_grammars": None,
+                    "retrieved_grammars": [],
                     "processing_times": processing_times
                 }
         else:
