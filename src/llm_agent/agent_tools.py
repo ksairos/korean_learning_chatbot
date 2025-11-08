@@ -110,9 +110,9 @@ async def retrieve_grammars_tool(
                 output_type=List[int],
                 instructions="""
                     You're a search filter in Korean grammar database. Select all relevant search results from the GRAMMAR LIST, 
-                    based on the USER QUERY, and output their index only in a list. Focus on higher recall, if the number of potential 
-                    results is more that 1, and higher precision if there is only 1 relevant result (i.e. it should be exactly what the 
-                    user is looking for. If none are relevant, output an empty list
+                    based on the USER QUERY, and only output their indexes in a list in the relevancy order (most relevant - first). 
+                    Focus on higher recall, if the number of potential results is more that 1, and higher precision if there is 
+                    only 1 relevant result (i.e. it should be exactly what the user is looking for. If none are relevant, output an empty list
                     
                     Example 1 - high recall:
                     ```
