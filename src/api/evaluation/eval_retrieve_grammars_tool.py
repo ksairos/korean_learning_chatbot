@@ -204,7 +204,7 @@ async def keyword_retrieve_grammars(
         deps: RouterAgentDeps,
         search_query: str,
         user_prompt: str,
-        retrieve_top_k: int = 15,
+        retrieve_top_k: int = 20,
         llm_filter: bool = True
 ) -> dict:
 
@@ -246,6 +246,8 @@ async def keyword_retrieve_grammars(
     # --- 3. Qdrant Post-processing ---
     start_time = loop.time()
     logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+    logfire.debug(f"Hit 1: {hits[0]}")
 
     # Convert to schema objects
     docs = [
