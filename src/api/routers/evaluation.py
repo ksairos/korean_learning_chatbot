@@ -149,4 +149,6 @@ async def direct_search_eval(user_prompt: str, strategy: str):
         else:
             raise HTTPException(status_code=400, detail="Invalid strategy")
 
+        local_logfire.info(f"Final Retrieved Grammar List: {retrieved_grammars}")
+
         return retrieved_grammars
