@@ -216,6 +216,6 @@ async def eval_retrieve_grammars_tool(
         else:
             # Modified return (no LLM filter)
             return {
-                "retrieved_grammars": result,
+                "retrieved_grammars": result[:5],
                 "processing_times": processing_times
             }
