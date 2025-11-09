@@ -23,7 +23,7 @@ async def hybrid_retrieve_grammars(
         deps: RouterAgentDeps,
         search_query: str,
         user_prompt: str,
-        retrieve_top_k: int = 30,
+        retrieve_top_k: int = 20,
         llm_filter: bool = True
 ) -> dict:
     """
