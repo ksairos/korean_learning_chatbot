@@ -123,5 +123,10 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
             query = query_rewriter_response.output
 
-        retrieved_grammars = await eval_retrieve_grammars_tool(deps, query, user_prompt)
+        if strategy == "no_llm_filter":
+            llm_filter = False
+        else:
+            llm_filter = True
+
+        retrieved_grammars = await eval_retrieve_grammars_tool(deps, query, user_prompt, llm_filter=llm_filter)
         return retrieved_grammars
