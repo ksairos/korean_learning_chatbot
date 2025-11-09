@@ -115,7 +115,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
 
         deps = await get_evaluation_deps(AsyncSession())
 
-        if not "rewriter" in strategy:
+        if "rewriter" in strategy:
             query_rewriter_response = await query_rewriter_agent.run(
                 user_prompt=user_prompt,
                 usage_limits=UsageLimits(request_limit=1),
