@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.usage import UsageLimits
 
-from src.api.evaluation.eval_retrieve_grammars_tool import eval_retrieve_grammars_tool
+from src.api.evaluation.eval_retrieve_grammars_tool import hybrid_retrieve_grammars
 from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy
 from src.config.settings import Config
 from src.db.crud import get_user_ids
@@ -115,7 +115,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
 
         deps = await get_evaluation_deps(AsyncSession())
 
-        if not "no_rewriter" in strategy:
+        if not "rewriter" in strategy:
             query_rewriter_response = await query_rewriter_agent.run(
                 user_prompt=user_prompt,
                 usage_limits=UsageLimits(request_limit=1),
@@ -123,10 +123,10 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
             query = query_rewriter_response.output
 
-        if "no_llm_filter" in strategy:
-            llm_filter = False
+        if "llm_filter" in strategy:
+            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=True)
         else:
-            llm_filter = True
+            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=False)
 
-        retrieved_grammars = await eval_retrieve_grammars_tool(deps, query, user_prompt, llm_filter=llm_filter)
+
         return retrieved_grammars
