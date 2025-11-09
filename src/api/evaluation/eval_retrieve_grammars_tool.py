@@ -152,7 +152,7 @@ async def hybrid_retrieve_grammars(
         logfire.info("No documents found.")
         # Modified return
         return {
-            "payload": None,
+            "retrieved_grammars": [],
             "processing_times": processing_times
         }
 
@@ -264,9 +264,8 @@ async def keyword_retrieve_grammars(
 
     if not docs:
         logfire.info("No documents found.")
-        # Modified return
         return {
-            "payload": None,
+            "retrieved_grammars": [],
             "processing_times": processing_times
         }
 
