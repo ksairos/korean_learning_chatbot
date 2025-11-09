@@ -232,7 +232,7 @@ async def keyword_retrieve_grammars(
     with logfire.span(f"Querying Qdrant for search_query = {search_query}"):
 
         response = await deps.qdrant_client.query_points(
-            collection_name=config.qdrant_collection_name_rag_small,
+            collection_name=config.qdrant_collection_name_final,
             query=sparse_vector_query,
             using=config.sparse_embedding_model,
             with_payload=True,
