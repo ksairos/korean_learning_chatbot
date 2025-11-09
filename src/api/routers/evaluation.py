@@ -115,7 +115,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
 
         deps = await get_evaluation_deps(AsyncSession())
 
-        if not strategy == "no_rewriter":
+        if not "no_rewriter" in strategy:
             query_rewriter_response = await query_rewriter_agent.run(
                 user_prompt=user_prompt,
                 usage_limits=UsageLimits(request_limit=1),
@@ -123,7 +123,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
             query = query_rewriter_response.output
 
-        if strategy == "no_llm_filter":
+        if "no_llm_filter" in strategy:
             llm_filter = False
         else:
             llm_filter = True
