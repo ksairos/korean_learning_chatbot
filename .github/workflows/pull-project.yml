@@ -1,0 +1,26 @@
+name: Pull and Restart the Server
+
+on:
+  push:
+    branches: [ "master" ]
+
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: |
+          chmod +x ./stop_all.sh
+          chmod +x ./start_all.sh
+
+      - name: Run script 1
+        run: ./stop_all.sh
+
+      - name: Run script 2
+        run: ./start_all.sh
