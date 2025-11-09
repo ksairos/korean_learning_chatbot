@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pydantic_ai.agent import  Agent
 from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
 
+from src.api.evaluation.reranker import QwenReranker
 from src.config.settings import Config
 from src.schemas.schemas import GrammarEntryV2, RetrievedGrammar, RouterAgentDeps, ThinkingGrammarAgentDeps
 
@@ -13,6 +14,8 @@ config = Config()
 
 import asyncio
 from typing import List
+
+reranker = QwenReranker(use_cuda=True)
 
 llm_filter_agent = Agent(
     model="openai:gpt-4.1",
@@ -83,7 +86,7 @@ async def hybrid_retrieve_grammars(
         "embedding_generation_time": 0.0,
         "qdrant_query_time": 0.0,
         "qdrant_postprocessing_time": 0.0,
-        "llm_filter_time": 0.0,
+        "rerank_time": 0.0,
         "overall_time": 0.0
     }
     loop = asyncio.get_event_loop()
@@ -137,9 +140,6 @@ async def hybrid_retrieve_grammars(
             hits = response.points
             logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-        elif cross:
-            return
-
         else:
             # Use hybrid search with bm25 amd OpenAI embeddings with RRF
             response = await deps.qdrant_client.query_points(
@@ -185,15 +185,10 @@ async def hybrid_retrieve_grammars(
             llm_filter_prompt = [f"USER_QUERY: '{user_prompt}'\n\nGRAMMAR LIST: "]
 
             for i, doc in enumerate(result):
-                # ! For Version 1 grammars (full in json)
                 llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
-                # ! For Version 2 grammars (MD)
-                # llm_filter_prompt.append(f"{i}. {doc}")
-
-
             llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-            processing_times["llm_filter_time"] = loop.time() - start_time  # End timer for LLM
+            processing_times["rerank_time"] = loop.time() - start_time  # End timer for LLM
             processing_times["overall_time"] = sum(processing_times.values())
 
             filtered_doc_ids = llm_filter_response.output
@@ -213,8 +208,39 @@ async def hybrid_retrieve_grammars(
                     "retrieved_grammars": [],
                     "processing_times": processing_times
                 }
+
+        # Cross-Encoder Reranker
+        elif cross:
+
+            start_time = loop.time()
+
+            docs_content = []
+            for i, doc in enumerate(result):
+                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+
+            instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
+            new_scores = reranker.rerank(search_query, docs_content, instructions)
+            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+
+            processing_times["rerank_time"] = loop.time() - start_time
+            logfire.info(f"Rankings: {ranking}")
+
+
+            combined = zip(docs, ranking)
+            sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
+
+            reranked_docs = []
+            for doc, (rank, score) in sorted_combined:
+                doc.cross_score = score
+                reranked_docs.append(doc)
+
+            return {
+                "retrieved_grammars": reranked_docs,
+                "processing_times": processing_times
+            }
+
+        # No Reranking
         else:
-            # Modified return (no LLM filter)
             return {
                 "retrieved_grammars": result[:5],
                 "processing_times": processing_times
@@ -235,7 +261,7 @@ async def keyword_retrieve_grammars(
         "embedding_generation_time": 0.0,
         "qdrant_query_time": 0.0,
         "qdrant_postprocessing_time": 0.0,
-        "llm_filter_time": 0.0,
+        "rerank_time": 0.0,
         "overall_time": 0.0
     }
     loop = asyncio.get_event_loop()
@@ -327,7 +353,7 @@ async def keyword_retrieve_grammars(
                 llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
             llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-            processing_times["llm_filter_time"] = loop.time() - start_time  # End timer for LLM
+            processing_times["rerank_time"] = loop.time() - start_time  # End timer for LLM
             processing_times["overall_time"] = sum(processing_times.values())
 
             filtered_doc_ids = llm_filter_response.output
@@ -369,7 +395,7 @@ deps: RouterAgentDeps,
         "embedding_generation_time": 0.0,
         "qdrant_query_time": 0.0,
         "qdrant_postprocessing_time": 0.0,
-        "llm_filter_time": 0.0,
+        "rerank_time": 0.0,
         "overall_time": 0.0
     }
     loop = asyncio.get_event_loop()
@@ -462,7 +488,7 @@ deps: RouterAgentDeps,
                 llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
             llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
-            processing_times["llm_filter_time"] = loop.time() - start_time  # End timer for LLM
+            processing_times["rerank_time"] = loop.time() - start_time  # End timer for LLM
             processing_times["overall_time"] = sum(processing_times.values())
 
             filtered_doc_ids = llm_filter_response.output
