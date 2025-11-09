@@ -16,11 +16,7 @@ jobs:
 
       - name: Make scripts executable
         run: |
-          chmod +x ./stop_all.sh
-          chmod +x ./start_all.sh
+          chmod +x ./restart_all.sh
 
-      - name: Run script 1
-        run: ./stop_all.sh
-
-      - name: Run script 2
-        run: ./start_all.sh
+      - name: Run the script
+        run: ./restart_all.sh
