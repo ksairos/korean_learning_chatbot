@@ -235,7 +235,7 @@ async def hybrid_retrieve_grammars(
                 reranked_docs.append(doc)
 
             return {
-                "retrieved_grammars": reranked_docs,
+                "retrieved_grammars": reranked_docs[:5],
                 "processing_times": processing_times
             }
 
@@ -373,6 +373,36 @@ async def keyword_retrieve_grammars(
                     "retrieved_grammars": [],
                     "processing_times": processing_times
                 }
+        # Cross-Encoder Reranker
+        elif cross:
+
+            start_time = loop.time()
+
+            docs_content = []
+            for i, doc in enumerate(result):
+                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+
+            instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
+            new_scores = reranker.rerank(search_query, docs_content, instructions)
+            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+
+            processing_times["rerank_time"] = loop.time() - start_time
+            logfire.info(f"Rankings: {ranking}")
+
+
+            combined = zip(docs, ranking)
+            sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
+
+            reranked_docs = []
+            for doc_with_score, (rank, score) in sorted_combined:
+                doc = doc_with_score.content
+                reranked_docs.append(doc)
+
+            return {
+                "retrieved_grammars": reranked_docs[:5],
+                "processing_times": processing_times
+            }
+
         else:
             # Modified return (no LLM filter)
             return {
@@ -508,6 +538,36 @@ deps: RouterAgentDeps,
                     "retrieved_grammars": [],
                     "processing_times": processing_times
                 }
+        # Cross-Encoder Reranker
+        elif cross:
+
+            start_time = loop.time()
+
+            docs_content = []
+            for i, doc in enumerate(result):
+                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+
+            instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
+            new_scores = reranker.rerank(search_query, docs_content, instructions)
+            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+
+            processing_times["rerank_time"] = loop.time() - start_time
+            logfire.info(f"Rankings: {ranking}")
+
+
+            combined = zip(docs, ranking)
+            sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
+
+            reranked_docs = []
+            for doc_with_score, (rank, score) in sorted_combined:
+                doc = doc_with_score.content
+                reranked_docs.append(doc)
+
+            return {
+                "retrieved_grammars": reranked_docs[:5],
+                "processing_times": processing_times
+            }
+
         else:
             # Modified return (no LLM filter)
             return {
