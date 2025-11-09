@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.usage import UsageLimits
 
-from src.api.evaluation.eval_retrieve_grammars_tool import hybrid_retrieve_grammars
+from src.api.evaluation.eval_retrieve_grammars_tool import hybrid_retrieve_grammars, keyword_retrieve_grammars
 from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy
 from src.config.settings import Config
 from src.db.crud import get_user_ids
@@ -124,9 +124,14 @@ async def direct_search_eval(user_prompt: str, strategy: str):
             query = query_rewriter_response.output
 
         if "llm_filter" in strategy:
-            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=True)
-
+            llm_filter = True
         else:
-            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=False)
+            llm_filter = False
+
+        if "hybrid" in strategy:
+            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter)
+
+        elif "keyword" in strategy:
+            retrieved_grammars = await keyword_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter)
 
         return retrieved_grammars
