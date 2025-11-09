@@ -301,9 +301,6 @@ async def keyword_retrieve_grammars(
             hits = response.points
             logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-        elif cross:
-            return
-
         else:
             response = await deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_final,
@@ -466,9 +463,6 @@ deps: RouterAgentDeps,
             hits = response.points
             logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-        elif cross:
-            return
-
         else:
             response = await deps.qdrant_client.query_points(
                 collection_name=config.qdrant_collection_name_final,
@@ -538,7 +532,7 @@ deps: RouterAgentDeps,
                     "retrieved_grammars": [],
                     "processing_times": processing_times
                 }
-        # Cross-Encoder Reranker
+
         elif cross:
 
             start_time = loop.time()
