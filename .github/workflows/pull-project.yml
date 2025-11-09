@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-run:
-    runs-on: lab-pc
+    runs-on: [lab-pc, self-hosted, linux]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
