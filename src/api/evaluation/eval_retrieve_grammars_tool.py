@@ -247,8 +247,6 @@ async def keyword_retrieve_grammars(
     start_time = loop.time()
     logfire.info(f"Received {len(hits)} results from Qdrant.")
 
-    logfire.debug(f"Hit 1: {hits[0]}")
-
     # Convert to schema objects
     docs = [
         RetrievedGrammar(
