@@ -333,11 +333,13 @@ deps: RouterAgentDeps,
     # --- 1. Embedding Generation ---
     start_time = loop.time()
     with logfire.span("Creating embedding for search_query = {search_query}", search_query=search_query):
-        sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
-        sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
+        vector_query = await deps.openai_client.embeddings.create(
+            model=config.embedding_model,
+            input=search_query)
+        vector_query = vector_query.data[0].embedding
     processing_times["embedding_generation_time"] = loop.time() - start_time
 
-    bm_threshold = 0
+    vector_threshold = 0
 
     # --- 2. Qdrant Query ---
     start_time = loop.time()
@@ -345,11 +347,11 @@ deps: RouterAgentDeps,
 
         response = await deps.qdrant_client.query_points(
             collection_name=config.qdrant_collection_name_final,
-            query=sparse_vector_query,
-            using=config.sparse_embedding_model,
+            query=vector_query,
+            using=config.embedding_model,
             with_payload=True,
             limit=retrieve_top_k,
-            score_threshold=bm_threshold
+            score_threshold=vector_threshold
         )
         hits = response.points
 
