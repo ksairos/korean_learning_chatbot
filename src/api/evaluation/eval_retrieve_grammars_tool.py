@@ -123,14 +123,32 @@ async def hybrid_retrieve_grammars(
     # --- 2. Qdrant Query ---
     start_time = loop.time()
     with logfire.span(f"Querying Qdrant for search_query = {search_query}"):
-        # Use hybrid search with bm25 amd OpenAI embeddings with RRF
-        response = await deps.qdrant_client.query_points(
-            collection_name=config.qdrant_collection_name_final,
-            prefetch=[bm_25_prefetch, dense_prefetch],
-            query=FusionQuery(fusion=Fusion.RRF),
-            with_payload=True,
-        )
-        hits = response.points
+        if colbert:
+            late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
+
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_rag_small,
+                prefetch=[bm_25_prefetch, dense_prefetch],
+                query=late_vector_query,
+                using=config.late_interaction_model,
+                limit=5,
+                with_payload=True,
+            )
+            hits = response.points
+            logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+        elif cross:
+            return
+
+        else:
+            # Use hybrid search with bm25 amd OpenAI embeddings with RRF
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_final,
+                prefetch=[bm_25_prefetch, dense_prefetch],
+                query=FusionQuery(fusion=Fusion.RRF),
+                with_payload=True,
+            )
+            hits = response.points
     processing_times["qdrant_query_time"] = loop.time() - start_time
 
     # --- 3. Qdrant Post-processing ---
@@ -231,19 +249,45 @@ async def keyword_retrieve_grammars(
 
     bm_threshold = 0
 
+    # Set up the Hybrid search prefetches
+    bm_25_prefetch = Prefetch(
+        query=sparse_vector_query,
+        using=config.sparse_embedding_model,
+        limit=retrieve_top_k,
+        score_threshold=bm_threshold,
+    )
+
     # --- 2. Qdrant Query ---
     start_time = loop.time()
     with logfire.span(f"Querying Qdrant for search_query = {search_query}"):
 
-        response = await deps.qdrant_client.query_points(
-            collection_name=config.qdrant_collection_name_final,
-            query=sparse_vector_query,
-            using=config.sparse_embedding_model,
-            with_payload=True,
-            limit=retrieve_top_k,
-            score_threshold=bm_threshold
-        )
-        hits = response.points
+        if colbert:
+            late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
+
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_rag_small,
+                prefetch=[bm_25_prefetch],
+                query=late_vector_query,
+                using=config.late_interaction_model,
+                limit=5,
+                with_payload=True,
+            )
+            hits = response.points
+            logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+        elif cross:
+            return
+
+        else:
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_final,
+                query=sparse_vector_query,
+                using=config.sparse_embedding_model,
+                with_payload=True,
+                limit=retrieve_top_k,
+                score_threshold=bm_threshold
+            )
+            hits = response.points
 
     processing_times["qdrant_query_time"] = loop.time() - start_time
 
@@ -341,19 +385,44 @@ deps: RouterAgentDeps,
 
     vector_threshold = 0
 
+    dense_prefetch = Prefetch(
+        query=vector_query,
+        using=config.embedding_model,
+        limit=retrieve_top_k,
+        score_threshold=vector_threshold,
+    )
+
     # --- 2. Qdrant Query ---
     start_time = loop.time()
     with logfire.span(f"Querying Qdrant for search_query = {search_query}"):
 
-        response = await deps.qdrant_client.query_points(
-            collection_name=config.qdrant_collection_name_final,
-            query=vector_query,
-            using=config.embedding_model,
-            with_payload=True,
-            limit=retrieve_top_k,
-            score_threshold=vector_threshold
-        )
-        hits = response.points
+        if colbert:
+            late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
+
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_rag_small,
+                prefetch=[dense_prefetch],
+                query=late_vector_query,
+                using=config.late_interaction_model,
+                limit=5,
+                with_payload=True,
+            )
+            hits = response.points
+            logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+        elif cross:
+            return
+
+        else:
+            response = await deps.qdrant_client.query_points(
+                collection_name=config.qdrant_collection_name_final,
+                query=vector_query,
+                using=config.embedding_model,
+                with_payload=True,
+                limit=retrieve_top_k,
+                score_threshold=vector_threshold
+            )
+            hits = response.points
 
     processing_times["qdrant_query_time"] = loop.time() - start_time
 
