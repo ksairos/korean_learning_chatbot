@@ -170,6 +170,7 @@ async def hybrid_retrieve_grammars(
 
     if not docs:
         logfire.info("No documents found.")
+        processing_times["overall_time"] = sum(processing_times.values())
         # Modified return
         return {
             "retrieved_grammars": [],
@@ -220,9 +221,10 @@ async def hybrid_retrieve_grammars(
 
             instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
             new_scores = reranker.rerank(search_query, docs_content, instructions)
-            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+            ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
+            processing_times["overall_time"] = sum(processing_times.values())
             logfire.info(f"Rankings: {ranking}")
 
 
@@ -241,6 +243,7 @@ async def hybrid_retrieve_grammars(
 
         # No Reranking
         else:
+            processing_times["overall_time"] = sum(processing_times.values())
             return {
                 "retrieved_grammars": result[:5],
                 "processing_times": processing_times
@@ -333,6 +336,7 @@ async def keyword_retrieve_grammars(
 
     if not docs:
         logfire.info("No documents found.")
+        processing_times["overall_time"] = sum(processing_times.values())
         return {
             "retrieved_grammars": [],
             "processing_times": processing_times
@@ -381,9 +385,10 @@ async def keyword_retrieve_grammars(
 
             instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
             new_scores = reranker.rerank(search_query, docs_content, instructions)
-            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+            ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
+            processing_times["overall_time"] = sum(processing_times.values())
             logfire.info(f"Rankings: {ranking}")
 
 
@@ -402,6 +407,7 @@ async def keyword_retrieve_grammars(
 
         else:
             # Modified return (no LLM filter)
+            processing_times["overall_time"] = sum(processing_times.values())
             return {
                 "retrieved_grammars": result[:5],
                 "processing_times": processing_times
@@ -495,6 +501,7 @@ deps: RouterAgentDeps,
 
     if not docs:
         logfire.info("No documents found.")
+        processing_times["overall_time"] = sum(processing_times.values())
         return {
             "retrieved_grammars": [],
             "processing_times": processing_times
@@ -543,9 +550,10 @@ deps: RouterAgentDeps,
 
             instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
             new_scores = reranker.rerank(search_query, docs_content, instructions)
-            ranking = [(i, score) for i, score in enumerate(new_scores)] \
+            ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
+            processing_times["overall_time"] = sum(processing_times.values())
             logfire.info(f"Rankings: {ranking}")
 
 
@@ -564,6 +572,7 @@ deps: RouterAgentDeps,
 
         else:
             # Modified return (no LLM filter)
+            processing_times["overall_time"] = sum(processing_times.values())
             return {
                 "retrieved_grammars": result[:5],
                 "processing_times": processing_times
