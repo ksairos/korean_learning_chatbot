@@ -230,8 +230,8 @@ async def hybrid_retrieve_grammars(
             sorted_combined = sorted(combined, key=lambda item: item[1][1], reverse=True)
 
             reranked_docs = []
-            for doc, (rank, score) in sorted_combined:
-                doc.cross_score = score
+            for doc_with_score, (rank, score) in sorted_combined:
+                doc = doc_with_score.content
                 reranked_docs.append(doc)
 
             return {
