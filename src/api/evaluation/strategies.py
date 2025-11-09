@@ -17,6 +17,15 @@ hyde_agent = Agent(
         """
 )
 
+hyde_direct = Agent(
+    model="openai:gpt-4.1-mini",
+    instrument=True,
+    instructions="""
+Ты - профессиональный преподаватель корейского языка. Сгенерируйте гипотетическое определение на грамматику из запроса пользователя. 
+Текст должен быть кратким и содержать только необходимую информацию. Уместите ответ в 2-3 предложениях.
+"""
+)
+
 class RagEvaluationStrategy:
     """Base class for RAG evaluation strategies"""
     

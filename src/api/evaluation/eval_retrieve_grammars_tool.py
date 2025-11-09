@@ -74,7 +74,9 @@ async def hybrid_retrieve_grammars(
         search_query: str,
         user_prompt: str,
         retrieve_top_k: int = 20,
-        llm_filter: bool = True
+        llm_filter: bool = False,
+        colbert: bool = False,
+        cross: bool = False
 ) -> dict:
     # --- Setup Timings ---
     processing_times = {
@@ -205,7 +207,117 @@ async def keyword_retrieve_grammars(
         search_query: str,
         user_prompt: str,
         retrieve_top_k: int = 20,
-        llm_filter: bool = True
+        llm_filter: bool = False,
+        colbert: bool = False,
+        cross: bool = False
+) -> dict:
+
+    # --- Setup Timings ---
+    processing_times = {
+        "embedding_generation_time": 0.0,
+        "qdrant_query_time": 0.0,
+        "qdrant_postprocessing_time": 0.0,
+        "llm_filter_time": 0.0,
+        "overall_time": 0.0
+    }
+    loop = asyncio.get_event_loop()
+
+    # --- 1. Embedding Generation ---
+    start_time = loop.time()
+    with logfire.span("Creating embedding for search_query = {search_query}", search_query=search_query):
+        sparse_vector_query = next(deps.sparse_embedding.query_embed(search_query))
+        sparse_vector_query = SparseVector(**sparse_vector_query.as_object())
+    processing_times["embedding_generation_time"] = loop.time() - start_time
+
+    bm_threshold = 0
+
+    # --- 2. Qdrant Query ---
+    start_time = loop.time()
+    with logfire.span(f"Querying Qdrant for search_query = {search_query}"):
+
+        response = await deps.qdrant_client.query_points(
+            collection_name=config.qdrant_collection_name_final,
+            query=sparse_vector_query,
+            using=config.sparse_embedding_model,
+            with_payload=True,
+            limit=retrieve_top_k,
+            score_threshold=bm_threshold
+        )
+        hits = response.points
+
+    processing_times["qdrant_query_time"] = loop.time() - start_time
+
+    # --- 3. Qdrant Post-processing ---
+    start_time = loop.time()
+    logfire.info(f"Received {len(hits)} results from Qdrant.")
+
+    # Convert to schema objects
+    docs = [
+        RetrievedGrammar(
+            id=hit.id,
+            content=GrammarEntryV2(**hit.payload),
+            score=hit.score,
+        )
+        for hit in hits
+    ]
+
+    logfire.info(f"Retrieved docs: {docs}")
+    processing_times["qdrant_postprocessing_time"] = loop.time() - start_time
+
+    if not docs:
+        logfire.info("No documents found.")
+        return {
+            "retrieved_grammars": [],
+            "processing_times": processing_times
+        }
+
+    else:
+        result = [doc.content for doc in docs]
+
+        if llm_filter:
+            # --- 4. LLM Filtering ---
+            start_time = loop.time()
+            llm_filter_prompt = [f"USER_QUERY: '{user_prompt}'\n\nGRAMMAR LIST: "]
+
+            for i, doc in enumerate(result):
+                llm_filter_prompt.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+
+            llm_filter_response = await llm_filter_agent.run(user_prompt="\n\n".join(llm_filter_prompt))
+            processing_times["llm_filter_time"] = loop.time() - start_time  # End timer for LLM
+            processing_times["overall_time"] = sum(processing_times.values())
+
+            filtered_doc_ids = llm_filter_response.output
+
+            if filtered_doc_ids:
+                filtered_docs = [result[i] for i in filtered_doc_ids]
+                logfire.info(f"LLM filtered docs: {filtered_docs}")
+                # Modified return
+                return {
+                    "retrieved_grammars": filtered_docs,
+                    "processing_times": processing_times
+                }
+
+            else:
+                # Modified return
+                return {
+                    "retrieved_grammars": [],
+                    "processing_times": processing_times
+                }
+        else:
+            # Modified return (no LLM filter)
+            return {
+                "retrieved_grammars": result[:5],
+                "processing_times": processing_times
+            }
+
+async def dense_retrieve_grammars(
+deps: RouterAgentDeps,
+        search_query: str,
+        user_prompt: str,
+        retrieve_top_k: int = 20,
+        llm_filter: bool = False,
+        colbert: bool = False,
+        cross: bool = False
 ) -> dict:
 
     # --- Setup Timings ---

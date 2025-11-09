@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai.usage import UsageLimits
 
-from src.api.evaluation.eval_retrieve_grammars_tool import hybrid_retrieve_grammars, keyword_retrieve_grammars
-from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy
+from src.api.evaluation.eval_retrieve_grammars_tool import hybrid_retrieve_grammars, keyword_retrieve_grammars, \
+    dense_retrieve_grammars
+from src.api.evaluation.strategies import STRATEGY_MAP, RagEvaluationStrategy, hyde_direct
 from src.config.settings import Config
 from src.db.crud import get_user_ids
 from src.db.database import get_db
@@ -111,27 +112,41 @@ async def direct_search_eval(user_prompt: str, strategy: str):
     with local_logfire.span(f"Strategy: {strategy}"):
         local_logfire.info(f'Query: {user_prompt}')
 
-        query = user_prompt
-
         deps = await get_evaluation_deps(AsyncSession())
 
         if "rewriter" in strategy:
-            query_rewriter_response = await query_rewriter_agent.run(
-                user_prompt=user_prompt,
-                usage_limits=UsageLimits(request_limit=1),
-            )
+            query_rewriter_response = await query_rewriter_agent.run(user_prompt=user_prompt)
             local_logfire.info(f"Rewritten query: {query_rewriter_response.output}")
             query = query_rewriter_response.output
 
+        elif "hyde" in strategy:
+            hyde_response = await hyde_direct.run(user_prompt=user_prompt)
+            local_logfire.info(f"Hyde response: {hyde_response.output}")
+            query = hyde_response.output
+
+        else:
+            query = user_prompt
+
+
+        llm_filter = False
+        colbert = False
+        cross = False
+
         if "llm_filter" in strategy:
             llm_filter = True
-        else:
-            llm_filter = False
+        elif "colbert" in strategy:
+            colbert = True
+        elif "cross" in strategy:
+            cross = True
+
 
         if "hybrid" in strategy:
-            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter)
-
+            retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter, colbert=colbert, cross=cross)
         elif "keyword" in strategy:
-            retrieved_grammars = await keyword_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter)
+            retrieved_grammars = await keyword_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter, colbert=colbert, cross=cross)
+        elif "dense" in strategy:
+            retrieved_grammars = await dense_retrieve_grammars(deps, query, user_prompt, llm_filter=llm_filter, colbert=colbert, cross=cross)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid strategy")
 
         return retrieved_grammars
