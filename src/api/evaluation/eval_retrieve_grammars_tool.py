@@ -127,7 +127,7 @@ async def hybrid_retrieve_grammars(
             late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
 
             response = await deps.qdrant_client.query_points(
-                collection_name=config.qdrant_collection_name_rag_small,
+                collection_name=config.qdrant_collection_name_final,
                 prefetch=[bm_25_prefetch, dense_prefetch],
                 query=late_vector_query,
                 using=config.late_interaction_model,
@@ -265,7 +265,7 @@ async def keyword_retrieve_grammars(
             late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
 
             response = await deps.qdrant_client.query_points(
-                collection_name=config.qdrant_collection_name_rag_small,
+                collection_name=config.qdrant_collection_name_final,
                 prefetch=[bm_25_prefetch],
                 query=late_vector_query,
                 using=config.late_interaction_model,
@@ -400,7 +400,7 @@ deps: RouterAgentDeps,
             late_vector_query = next(deps.late_interaction_model.query_embed(search_query))
 
             response = await deps.qdrant_client.query_points(
-                collection_name=config.qdrant_collection_name_rag_small,
+                collection_name=config.qdrant_collection_name_final,
                 prefetch=[dense_prefetch],
                 query=late_vector_query,
                 using=config.late_interaction_model,
