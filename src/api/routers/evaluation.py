@@ -125,6 +125,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
 
         if "llm_filter" in strategy:
             retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=True)
+
         else:
             retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=False)
 
