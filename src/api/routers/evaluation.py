@@ -129,5 +129,4 @@ async def direct_search_eval(user_prompt: str, strategy: str):
         else:
             retrieved_grammars = await hybrid_retrieve_grammars(deps, query, user_prompt, llm_filter=False)
 
-
         return retrieved_grammars
