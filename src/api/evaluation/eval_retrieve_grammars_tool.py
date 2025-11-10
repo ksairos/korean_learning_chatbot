@@ -231,8 +231,9 @@ async def hybrid_retrieve_grammars(
 
             reranked_docs = []
             for doc_with_score, (rank, score) in sorted_combined:
-                doc = doc_with_score.content
-                reranked_docs.append(doc)
+                if score >= 0.5:
+                    doc = doc_with_score.content
+                    reranked_docs.append(doc)
 
             return {
                 "retrieved_grammars": reranked_docs[:5],
@@ -394,8 +395,9 @@ async def keyword_retrieve_grammars(
 
             reranked_docs = []
             for doc_with_score, (rank, score) in sorted_combined:
-                doc = doc_with_score.content
-                reranked_docs.append(doc)
+                if score >= 0.5:
+                    doc = doc_with_score.content
+                    reranked_docs.append(doc)
 
             return {
                 "retrieved_grammars": reranked_docs[:5],
@@ -558,8 +560,9 @@ deps: RouterAgentDeps,
 
             reranked_docs = []
             for doc_with_score, (rank, score) in sorted_combined:
-                doc = doc_with_score.content
-                reranked_docs.append(doc)
+                if score >= 0.5:
+                    doc = doc_with_score.content
+                    reranked_docs.append(doc)
 
             return {
                 "retrieved_grammars": reranked_docs[:5],
