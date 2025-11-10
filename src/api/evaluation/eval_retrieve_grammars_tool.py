@@ -217,7 +217,7 @@ async def hybrid_retrieve_grammars(
 
             docs_content = []
             for i, doc in enumerate(result):
-                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+                docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
             new_scores = reranker.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
@@ -379,7 +379,7 @@ async def keyword_retrieve_grammars(
 
             docs_content = []
             for i, doc in enumerate(result):
-                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+                docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
             new_scores = reranker.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
@@ -543,7 +543,7 @@ deps: RouterAgentDeps,
 
             docs_content = []
             for i, doc in enumerate(result):
-                docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
+                docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
             new_scores = reranker.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
