@@ -15,7 +15,7 @@ config = Config()
 import asyncio
 from typing import List
 
-reranker = QwenReranker(use_cuda=True)
+reranker = QwenReranker()
 
 llm_filter_agent = Agent(
     model="openai:gpt-4.1",
