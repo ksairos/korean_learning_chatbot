@@ -1,153 +1,159 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from typing import List, Optional, Tuple
-from contextlib import contextmanager
-import gc
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from typing import List, Optional
 
 
 class QwenReranker:
-    def __init__(self, model_name: str = "Qwen/Qwen3-Reranker-0.6B", use_cuda: bool = True, 
-                 use_flash_attention: bool = True, max_length: int = 32768):
-        self.model_name = model_name
-        self.use_cuda = use_cuda
-        self.max_length = max_length
-        
-        self._initialize_model(use_flash_attention)
-        self._setup_tokens()
-        
-    def _initialize_model(self, use_flash_attention: bool):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, padding_side='left')
-        
-        model_kwargs = {"torch_dtype": torch.float16}
-        if use_flash_attention:
-            model_kwargs["attn_implementation"] = "flash_attention_2"
-            
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name, **model_kwargs)
-        self.model = self.model.eval()
-        
-        # Start with model on CPU to save VRAM when not in use
-        self.model_on_gpu = False
-        if self.use_cuda and torch.cuda.is_available():
-            # Only move to GPU during inference
-            pass
+    """
+    A class to encapsulate the Qwen Reranker model for easy reuse.
+
+    This class handles model and tokenizer loading, input formatting,
+    and scoring of query-document pairs.
+    """
+
+    def __init__(self,
+                 model_name_or_path: str = "Qwen/Qwen3-Reranker-0.6B",
+                 torch_dtype: torch.dtype = torch.bfloat16,
+                 use_flash_attention_2: bool = False,
+                 device: Optional[str] = None,
+                 max_length: int = 8192):
+        """
+        Initializes the QwenReranker.
+
+        Args:
+            model_name_or_path (str): The name or path of the reranker model.
+            torch_dtype (torch.dtype): The data type for model weights (e.g., torch.bfloat16).
+            use_flash_attention_2 (bool): Whether to use flash_attention_2 for acceleration.
+            device (Optional[str]): The device to run the model on ('cuda', 'cpu', etc.).
+                                    Auto-detects if None.
+            max_length (int): The maximum sequence length for the model.
+        """
+        if device is None:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
-            self.use_cuda = False
-        
-    def _setup_tokens(self):
+            self.device = device
+
+        print(f"Using device: {self.device}")
+
+        self.max_length = max_length
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, padding_side='left')
+
+        model_args = {'torch_dtype': torch_dtype}
+        if use_flash_attention_2:
+            if torch.cuda.is_available():
+                model_args['attn_implementation'] = "flash_attention_2"
+                print("Using flash_attention_2.")
+            else:
+                print("Warning: flash_attention_2 is requested but CUDA is not available. Falling back to default.")
+
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path, **model_args
+        ).to(self.device).eval()
+
         self.token_false_id = self.tokenizer.convert_tokens_to_ids("no")
         self.token_true_id = self.tokenizer.convert_tokens_to_ids("yes")
-        
-        prefix = "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n"
-        suffix = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
-        self.prefix_tokens = self.tokenizer.encode(prefix, add_special_tokens=False)
-        self.suffix_tokens = self.tokenizer.encode(suffix, add_special_tokens=False)
-    
-    @contextmanager
-    def gpu_context(self):
-        """Context manager to handle GPU memory efficiently"""
-        model_was_on_gpu = self.model_on_gpu
-        
-        try:
-            # Move model to GPU if needed
-            if self.use_cuda and not self.model_on_gpu:
-                self.model = self.model.cuda()
-                self.model_on_gpu = True
-            yield
-        finally:
-            # Move model back to CPU if it wasn't there originally
-            if self.use_cuda and not model_was_on_gpu and self.model_on_gpu:
-                self.model = self.model.cpu()
-                self.model_on_gpu = False
-                torch.cuda.empty_cache()
-                
-    def clear_cache(self):
-        """Explicitly clear GPU memory cache"""
-        if self.use_cuda and torch.cuda.is_available():
-            if self.model_on_gpu:
-                self.model = self.model.cpu()
-                self.model_on_gpu = False
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
-            gc.collect()
-            
-    def __del__(self):
-        """Cleanup when object is destroyed"""
-        try:
-            self.clear_cache()
-        except:
-            pass
-        
-    def format_instruction(self, instruction: Optional[str], query: str, doc: str) -> str:
+
+        # Pre-tokenize the instruction templates
+        prefix_text = "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n"
+        suffix_text = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+        self.prefix_tokens = self.tokenizer.encode(prefix_text, add_special_tokens=False)
+        self.suffix_tokens = self.tokenizer.encode(suffix_text, add_special_tokens=False)
+
+    def _format_instruction(self, query: str, doc: str, instruction: Optional[str] = None) -> str:
+        """Formats the input string for the model."""
         if instruction is None:
             instruction = 'Given a web search query, retrieve relevant passages that answer the query'
-        return "<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {doc}".format(
-            instruction=instruction, query=query, doc=doc
-        )
-    
-    def _process_inputs(self, pairs: List[str]) -> dict:
+        return f"<Instruct>: {instruction}\n<Query>: {query}\n<Document>: {doc}"
+
+    def _prepare_inputs(self, formatted_pairs: List[str]) -> dict:
+        """Tokenizes, adds special tokens, pads, and moves inputs to the correct device."""
         inputs = self.tokenizer(
-            pairs, padding=False, truncation='longest_first',
-            return_attention_mask=False, 
+            formatted_pairs,
+            padding=False,
+            truncation='longest_first',
+            return_attention_mask=False,
             max_length=self.max_length - len(self.prefix_tokens) - len(self.suffix_tokens)
         )
-        
-        for i, ele in enumerate(inputs['input_ids']):
-            inputs['input_ids'][i] = self.prefix_tokens + ele + self.suffix_tokens
-            
-        inputs = self.tokenizer.pad(inputs, padding=True, return_tensors="pt")
-        
+        # Manually add prefix and suffix tokens
+        for i in range(len(inputs['input_ids'])):
+            inputs['input_ids'][i] = self.prefix_tokens + inputs['input_ids'][i] + self.suffix_tokens
+
+        # Pad the batch
+        inputs = self.tokenizer.pad(inputs, padding=True, return_tensors="pt", max_length=self.max_length)
+
+        # Move to device
         for key in inputs:
-            inputs[key] = inputs[key].to(self.model.device)
-            
+            inputs[key] = inputs[key].to(self.device)
         return inputs
-    
+
     @torch.no_grad()
-    def _compute_logits(self, inputs: dict) -> List[float]:
-        batch_scores = self.model(**inputs).logits[:, -1, :]
-        true_vector = batch_scores[:, self.token_true_id]
-        false_vector = batch_scores[:, self.token_false_id]
-        batch_scores = torch.stack([false_vector, true_vector], dim=1)
-        batch_scores = torch.nn.functional.log_softmax(batch_scores, dim=1)
-        scores = batch_scores[:, 1].exp().tolist()
-        return scores
-    
-    def rerank(self, query: str, documents: List[str],
-               instruction: Optional[str] = None) -> List[float]:
-        queries = [query for i in range(len(documents))]
-            
-        pairs = [self.format_instruction(instruction, query, doc) 
-                for query, doc in zip(queries, documents)]
-        
-        with self.gpu_context():
-            inputs = self._process_inputs(pairs)
-            scores = self._compute_logits(inputs)
-        
-        return scores
-    
-    def rerank_query_documents(self, query: str, documents: List[str], 
-                              instruction: Optional[str] = None) -> List[Tuple[str, float]]:
-        scores = self.rerank(query, documents, instruction)
-        
-        doc_scores = list(zip(documents, scores))
-        doc_scores.sort(key=lambda x: x[1], reverse=True)
-        
-        return doc_scores
+    def compute_scores(self, query: str, documents: List[str], instruction: Optional[str] = None,
+                       batch_size: int = 4) -> List[float]:
+        """
+        Computes relevance scores for a list of documents given a single query.
+
+        Args:
+            query (str): The search query.
+            documents (List[str]): A list of documents to be ranked.
+            instruction (Optional[str]): A custom instruction for the task. If None, a default is used.
+            batch_size (int): The number of documents to process in a single batch.
+
+        Returns:
+            List[float]: A list of relevance scores, one for each document.
+        """
+        all_scores = []
+        for i in range(0, len(documents), batch_size):
+            batch_docs = documents[i:i + batch_size]
+            formatted_pairs = [self._format_instruction(query, doc, instruction) for doc in batch_docs]
+
+            inputs = self._prepare_inputs(formatted_pairs)
+
+            logits = self.model(**inputs).logits[:, -1, :]
+
+            # Extract scores for "yes" and "no" tokens
+            true_scores = logits[:, self.token_true_id]
+            false_scores = logits[:, self.token_false_id]
+
+            # Combine and apply softmax
+            batch_scores = torch.stack([false_scores, true_scores], dim=1)
+            batch_log_softmax = torch.nn.functional.log_softmax(batch_scores, dim=1)
+
+            # Get the probability of "yes"
+            scores = batch_log_softmax[:, 1].exp().tolist()
+            all_scores.extend(scores)
+
+        return all_scores
 
 
+# --- Example Usage ---
 if __name__ == "__main__":
-    reranker = QwenReranker()
-    
-    task = 'Given a web search query, retrieve relevant passages that answer the query'
-    
-    query = "Explain gravity"
+    # 1. Initialize the reranker
+    # Set use_flash_attention_2=True if you have flash-attn installed and a supported GPU
+    try:
+        reranker = QwenReranker(use_flash_attention_2=True)
+    except ImportError:
+        print("flash-attn not installed. Falling back to default attention.")
+        reranker = QwenReranker(use_flash_attention_2=False)
+
+    # 2. Define your query and documents
+    query = "Explain the theory of relativity"
     documents = [
-        "The capital of China is Beijing.",
-        "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun.",
+        "The theory of relativity, developed by Albert Einstein, is a cornerstone of modern physics. It is divided into two parts: special relativity and general relativity.",
+        "The capital of France is Paris, a major European city and a global center for art, fashion, gastronomy, and culture.",
+        "General relativity is a theory of gravitation that describes gravity not as a force, but as a consequence of the curvature of spacetime caused by the mass and energy of objects.",
+        "Special relativity deals with the relationship between space and time for objects moving at constant speeds in a straight line. It introduced the famous equation E=mc².",
+        "Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles."
     ]
-    
-    scores = reranker.rerank(query, documents, task)
-    print("scores: ", scores)
-    
-    # Clean up GPU memory after use
-    reranker.clear_cache()
-    print("GPU memory cleared")
+
+    # 3. Compute scores
+    scores = reranker.compute_scores(query, documents)
+
+    # 4. Print ranked results
+    print(f"Query: {query}\n")
+    print("Ranked Documents:")
+
+    # Combine documents and scores, then sort
+    ranked_results = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+
+    for i, (doc, score) in enumerate(ranked_results):
+        print(f"Rank {i + 1} (Score: {score:.4f}): {doc}")
