@@ -381,8 +381,7 @@ async def keyword_retrieve_grammars(
             for i, doc in enumerate(result):
                 docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
-            instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
-            new_scores = reranker.rerank(search_query, docs_content, instructions)
+            new_scores = reranker.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
@@ -546,8 +545,7 @@ deps: RouterAgentDeps,
             for i, doc in enumerate(result):
                 docs_content.append(f"{i}. {doc.grammar_name_kr} - {doc.grammar_name_rus}")
 
-            instructions = "На основе запроса пользователя подберите самые подходящие грамматики"
-            new_scores = reranker.rerank(search_query, docs_content, instructions)
+            new_scores = reranker.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
