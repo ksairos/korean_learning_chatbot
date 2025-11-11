@@ -12,6 +12,7 @@ from pydantic_ai.agent import AgentRunResult
 from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.evaluation.reranker import QwenReranker
 from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
@@ -42,6 +43,8 @@ qdrant_client = AsyncQdrantClient(
     host=config.qdrant_host,
     port=config.qdrant_port,
 )
+
+reranking_model = QwenReranker()
 
 logfire.configure(token=config.logfire_api_key, environment="local")
 logfire.instrument_openai(openai_client)
@@ -113,7 +116,7 @@ async def process_message(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
-        # reranking_model=reranking_model,
+        reranking_model=reranking_model,
         session=session,
         late_interaction_model=late_interaction_model
     )

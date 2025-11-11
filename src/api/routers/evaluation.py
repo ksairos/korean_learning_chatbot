@@ -20,12 +20,13 @@ config = Config()
 local_logfire = logfire.with_tags("evaluation")
 
 async def get_evaluation_deps(session: AsyncSession):
-    from src.api.main import openai_client, qdrant_client, sparse_embedding, late_interaction_model
+    from src.api.main import openai_client, qdrant_client, sparse_embedding, late_interaction_model, reranking_model
     
     return RouterAgentDeps(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
+        reranking_model=reranking_model,
         late_interaction_model=late_interaction_model,
         session=session,
     )

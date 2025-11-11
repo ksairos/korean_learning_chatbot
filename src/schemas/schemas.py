@@ -8,6 +8,8 @@ from qdrant_client import AsyncQdrantClient
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.evaluation.reranker import QwenReranker
+
 
 class GrammarEntry(BaseModel):
     level: Literal[1, 2, 3, 4, 5, 6]
@@ -66,7 +68,7 @@ class RouterAgentDeps:
     openai_client: AsyncOpenAI
     qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
-    # reranking_model: TextCrossEncoder
+    reranking_model: QwenReranker
     session: AsyncSession
     late_interaction_model: LateInteractionTextEmbedding = None
 
@@ -78,7 +80,7 @@ class ThinkingGrammarAgentDeps:
     openai_client: AsyncOpenAI
     qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
-    # reranking_model: TextCrossEncoder
+    reranking_model: QwenReranker
     session: AsyncSession
     late_interaction_model: LateInteractionTextEmbedding = None
 

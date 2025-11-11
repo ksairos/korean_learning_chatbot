@@ -5,17 +5,14 @@ from dotenv import load_dotenv
 from pydantic_ai.agent import  Agent
 from qdrant_client.http.models import Prefetch, SparseVector, FusionQuery, Fusion
 
-from src.api.evaluation.reranker import QwenReranker
 from src.config.settings import Config
-from src.schemas.schemas import GrammarEntryV2, RetrievedGrammar, RouterAgentDeps, ThinkingGrammarAgentDeps
+from src.schemas.schemas import GrammarEntryV2, RetrievedGrammar, RouterAgentDeps
 
 load_dotenv()
 config = Config()
 
 import asyncio
 from typing import List
-
-reranker = QwenReranker()
 
 llm_filter_agent = Agent(
     model="openai:gpt-4.1",
@@ -219,7 +216,7 @@ async def hybrid_retrieve_grammars(
             for i, doc in enumerate(result):
                 docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
-            new_scores = reranker.compute_scores(search_query, docs_content)
+            new_scores = deps.reranking_model.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
@@ -382,7 +379,7 @@ async def keyword_retrieve_grammars(
             for i, doc in enumerate(result):
                 docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
-            new_scores = reranker.compute_scores(search_query, docs_content)
+            new_scores = deps.reranking_model.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
@@ -547,7 +544,7 @@ deps: RouterAgentDeps,
             for i, doc in enumerate(result):
                 docs_content.append(f"Грамматика: {doc.grammar_name_kr} - {doc.grammar_name_rus}\n\nОписание: {doc.content}")
 
-            new_scores = reranker.compute_scores(search_query, docs_content)
+            new_scores = deps.reranking_model.compute_scores(search_query, docs_content)
             ranking = [(i, score) for i, score in enumerate(new_scores)]
 
             processing_times["rerank_time"] = loop.time() - start_time
