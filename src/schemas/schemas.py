@@ -68,8 +68,8 @@ class RouterAgentDeps:
     openai_client: AsyncOpenAI
     qdrant_client: AsyncQdrantClient
     sparse_embedding: SparseTextEmbedding
-    reranking_model: QwenReranker
     session: AsyncSession
+    reranking_model: QwenReranker = None
     late_interaction_model: LateInteractionTextEmbedding = None
 
 @dataclass
