@@ -133,7 +133,7 @@ async def direct_search_eval(user_prompt: str, strategy: str):
         colbert = False
         cross = False
 
-        if "llm_filter" in strategy:
+        if "llm-filter" in strategy:
             llm_filter = True
         elif "colbert" in strategy:
             colbert = True
