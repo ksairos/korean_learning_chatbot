@@ -44,7 +44,7 @@ qdrant_client = AsyncQdrantClient(
     port=config.qdrant_port,
 )
 
-reranking_model = QwenReranker()
+# reranking_model = QwenReranker()
 
 logfire.configure(token=config.logfire_api_key, environment="local")
 logfire.instrument_openai(openai_client)
@@ -71,15 +71,6 @@ try:
     )
 except:
     sparse_embedding = SparseTextEmbedding(model_name=config.sparse_embedding_model)
-
-# try:
-#     reranking_model = TextCrossEncoder(
-#         model_name=config.reranking_model,
-#         cache_dir=cache_directory,
-#         cuda=False # TODO: change to True for prod
-#     )
-# except:
-#     reranking_model = TextCrossEncoder(config.reranking_model)
 
 try:
     late_interaction_model = LateInteractionTextEmbedding(
@@ -116,7 +107,7 @@ async def process_message(
         openai_client=openai_client,
         qdrant_client=qdrant_client,
         sparse_embedding=sparse_embedding,
-        reranking_model=reranking_model,
+        # reranking_model=reranking_model,
         session=session,
         late_interaction_model=late_interaction_model
     )
