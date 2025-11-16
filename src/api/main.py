@@ -128,6 +128,7 @@ async def process_message(
         response=router_answer,
     )
 
+
     if router_agent_response.output.message_type == "direct_grammar_search":
         query_rewriter_response = await query_rewriter_agent.run(
             user_prompt=message.user_prompt,
