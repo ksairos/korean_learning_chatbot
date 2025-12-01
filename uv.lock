@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1577,7 +1576,7 @@ dependencies = [
     { name = "environs" },
     { name = "fastapi", extra = ["standard"] },
     { name = "fastembed" },
-    { name = "flash-attn" },
+    { name = "flash-attn", marker = "sys_platform != 'darwin'" },
     { name = "jupyter" },
     { name = "krdict-py" },
     { name = "langchain-text-splitters" },
@@ -1632,7 +1631,7 @@ requires-dist = [
     { name = "environs", specifier = "~=9.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.11" },
     { name = "fastembed", specifier = ">=0.6.0" },
-    { name = "flash-attn", specifier = ">=2.8.3" },
+    { name = "flash-attn", marker = "sys_platform != 'darwin'", specifier = ">=2.8.3" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "krdict-py", specifier = ">=3.0.2" },
     { name = "langchain-text-splitters", specifier = ">=0.3.9" },
