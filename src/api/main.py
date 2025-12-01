@@ -36,7 +36,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 cache_directory = os.path.expanduser("~/.cache/huggingface/hub")
 
 openai_client = AsyncOpenAI()
-# TODO: Add async support using AsyncQdrantClient
 qdrant_client = AsyncQdrantClient(
     # IMPORTANT: Use qdrant_host_docker if running in docker
     # host=config.qdrant_host_docker,
