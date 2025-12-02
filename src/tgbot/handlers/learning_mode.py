@@ -4,11 +4,13 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+import numpy as np
+from qdrant_client import AsyncQdrantClient
 
 from src.config.settings import Config
 from src.db.crud import clear_chat_history
 from src.db.database import async_session
-from src.schemas.schemas import TelegramMessage, TelegramUser
+from src.schemas.schemas import TelegramMessage, TelegramUser, GrammarEntryV2
 from src.tgbot.misc.states import LearningState
 from src.tgbot.misc.utils import send_admin_message
 from src.utils.json_to_telegram_md import custom_telegram_format
@@ -16,7 +18,28 @@ from src.utils.json_to_telegram_md import custom_telegram_format
 learning_router = Router()
 config = Config()
 
+client = AsyncQdrantClient(host=config.qdrant_host, port=config.qdrant_port)
+collection_name = config.qdrant_collection_name_final
+
 LEARNING_API_URL = f"http://{config.fastapi_host}:{config.fastapi_port}/learning"
+
+async def get_random_grammar():
+    collection_info = await client.get_collection(collection_name)
+    vector_size = collection_info.config.params.vectors.size
+    random_vector = np.random.uniform(-1, 1, size=vector_size).tolist()
+    results = await client.query_points(
+        collection_name=collection_name,
+        query=random_vector,
+        limit=1,
+        with_payload=True
+    )
+    if results.points:
+        hit = results.points[0]
+        content = GrammarEntryV2(**hit.payload)
+        return content
+    else:
+        return None
+
 
 @learning_router.message(Command("learning"))
 async def learning_command(message: Message, state: FSMContext):
@@ -25,7 +48,6 @@ async def learning_command(message: Message, state: FSMContext):
         await state.clear()
         await state.set_state(LearningState.active)
         await state.update_data(turn_count=0)
-
         async with async_session() as session:
             await clear_chat_history(session, message.from_user.id)
 
@@ -33,6 +55,10 @@ async def learning_command(message: Message, state: FSMContext):
             "🗣️Режим изучения грамматики включен\n\n"
             "Чтобы выйти: /exit"
         )
+
+        grammar = await get_random_grammar()
+        await message.answer(custom_telegram_format(grammar.content))
+
     except Exception as e:
         await message.answer("Произошла ошибка, попробуйте снова")
 
