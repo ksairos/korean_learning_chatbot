@@ -17,7 +17,8 @@ from src.api.routers import evaluation
 from src.config.settings import Config
 from src.db.crud import get_message_history, update_message_history, get_user_ids
 from src.db.database import get_db
-from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent, translation_agent, conversation_agent
+from src.llm_agent.agent import router_agent, thinking_grammar_agent, system_agent, query_rewriter_agent, \
+    translation_agent, conversation_agent, learning_agent
 from src.llm_agent.agent_tools import retrieve_grammars_tool
 from src.schemas.schemas import (
     RouterAgentDeps,
@@ -83,7 +84,7 @@ except Exception:
 
 @app.get("/")
 async def root():
-    return {"message": "API"}
+    return {"message": "Works"}
 
 @app.post("/invoke")
 async def process_message(
@@ -337,6 +338,47 @@ async def conversation_message(
         local_logfire.error(f"Conversation error: {e}")
         raise HTTPException(status_code=500, detail="Conversation service error")
 
+@app.post("/learning")
+async def learning_message(
+        message: TelegramMessage,
+        background_tasks: BackgroundTasks,
+        session: AsyncSession = Depends(get_db)
+):
+    """Handle learning practice messages"""
+    local_logfire = logfire.with_tags(str(message.user.user_id))
+    local_logfire.info(f'Learning message: "{message.user_prompt}"')
+
+    # Check if user is registered
+    allowed_users = await get_user_ids(session)
+    if message.user.user_id not in allowed_users:
+        raise HTTPException(status_code=403, detail="User not registered")
+
+    # Get message history for context
+    message_history = await get_message_history(session, message.user)
+
+    try:
+        learning_response = await learning_agent.run(
+            user_prompt=message.user_prompt,
+            usage_limits=UsageLimits(request_limit=2),
+            message_history=message_history,
+        )
+
+        local_logfire.info("Learning response: {response}", response=learning_response.output)
+
+        # Update chat history with conversation
+        with local_logfire.span("update_message_history"):
+            user_message = ModelRequest(parts=[UserPromptPart(content=message.user_prompt)])
+            model_response = ModelResponse(parts=[TextPart(content=learning_response.output)])
+
+            new_messages = [user_message, model_response]
+            background_tasks.add_task(update_message_history, session, message.user, new_messages)
+            local_logfire.info(f"new_messages: {new_messages}")
+
+        return {"response": learning_response.output}
+
+    except Exception as e:
+        local_logfire.error(f"Conversation error: {e}")
+        raise HTTPException(status_code=500, detail="Conversation service error")
 
 # @app.post("/invoke_test")
 # async def without_llm(
