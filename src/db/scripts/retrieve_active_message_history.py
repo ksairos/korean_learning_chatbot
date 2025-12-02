@@ -48,7 +48,8 @@ def retrieve_message_history(user_id: int) -> list[ModelMessage]:
             
         # Print the parsed messages for debugging
         pprint([message.parts[0].content for message in chat_history])
+        print()
         return chat_history
 
 if __name__ == '__main__':
-    retrieve_message_history(1234335061)
+    retrieve_message_history(388262301)
