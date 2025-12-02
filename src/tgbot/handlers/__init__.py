@@ -4,12 +4,14 @@ from .chat import chat_router
 from .user import user_router
 from .translation_mode import translation_router
 from .conversation_mode import conversation_router
+from .learning_mode import learning_router
 
 routers_list = [
     admin_router,
     user_router,
     translation_router,
     conversation_router,
+    learning_router,
     chat_router,  # must be last
 ]
 
