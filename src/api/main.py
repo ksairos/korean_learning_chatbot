@@ -243,7 +243,7 @@ async def process_message(
             user_prompt=message.user_prompt,
             usage_limits=UsageLimits(request_limit=2),
             output_type=str,
-            message_history=message_history[-2:],
+            message_history=message_history,
         )
         local_logfire.info("System agent response: {response}", response=casual_response.output)
 
