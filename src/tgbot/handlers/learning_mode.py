@@ -14,6 +14,7 @@ from src.schemas.schemas import TelegramMessage, TelegramUser, GrammarEntryV2
 from src.tgbot.misc.states import LearningState
 from src.tgbot.misc.utils import send_admin_message
 from src.utils.json_to_telegram_md import custom_telegram_format
+from src.utils.old.json_to_telegram_md_old import grammar_entry_to_markdown
 
 learning_router = Router()
 config = Config()
@@ -57,7 +58,6 @@ async def learning_command(message: Message, state: FSMContext):
         )
 
         grammar = await get_random_grammar()
-        await message.answer(custom_telegram_format(grammar.content))
 
     except Exception as e:
         await message.answer("Произошла ошибка, попробуйте снова")
