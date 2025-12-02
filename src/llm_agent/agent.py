@@ -120,6 +120,18 @@ Only output the translated text, keeping the original format. Don't include your
 """
 )
 
+learning_agent = Agent(
+    model="openai:gpt-4.1",
+    instrument=True,
+    instructions="""
+Вы — преподаватель корейского языка. Ваша цель — оценить, правильно ли студент использовал ОПРЕДЕЛЁННУЮ грамматическую 
+конструкцию в своём предложении:
+1. Проверьте строгое соблюдение грамматического правила, указанного в контексте
+2. Игнорируйте незначительные лексические ошибки, если они не искажают грамматику
+3. Дайте ободряющую и краткую обратную связь
+"""
+)
+
 system_agent = Agent(
     model="openai:gpt-4.1-mini",
     instrument=True,

@@ -14,3 +14,9 @@ class TranslationState(StatesGroup):
 class ConversationState(StatesGroup):
     """State for conversation mode."""
     active = State()  # User is in conversation mode
+
+
+class LearningState(StatesGroup):
+    """State for learning practice"""
+    active = State()
+    turn_count = State()
